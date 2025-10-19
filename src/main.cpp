@@ -17,13 +17,12 @@ const float M_PI = (float)M_PI_DOUBLE; // keep float M_PI usage
 const unsigned int SCR_WIDTH = 1000;
 const unsigned int SCR_HEIGHT = 600;
 const float MIN_LEFT_BAR_WIDTH = 120.0f;
-const float MIN_RIGHT_BAR_WIDTH = 220.0f;
+const float MIN_RIGHT_BAR_WIDTH = 280.0f; // Increased for vector panels
 const float MIN_WINDOW_WIDTH = 650.0f; // below this, stop resizing behavior
-
 
 // Bar variables (pixel units)
 float leftBarWidth = 150.0f;
-float rightBarWidth = 150.0f;
+float rightBarWidth = 280.0f; // Increased for vector panels
 const float topBarHeight = 110.0f; // make static (const) to avoid top resizing
 
 // Handle size (pixels)
@@ -32,15 +31,23 @@ const float HANDLE_PX = 10.0f;
 // State
 bool resizingLeft = false;
 bool resizingRight = false;
-// bool resizingTop = false; // removed: top bar is static
 double lastX = 0.0, lastY = 0.0;
 double mouseX = 0.0, mouseY = 0.0;
+
+// Transformation values
+float translate[3] = {0.0f, 0.0f, 0.0f};
+float scale[3] = {1.0f, 1.0f, 1.0f};
+float rotate[3] = {0.0f, 0.0f, 0.0f};
+
+// Scroll offset for right panel
+float rightPanelScroll = 0.0f;
 
 // Helpers
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow *window);
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods);
 void cursor_position_callback(GLFWwindow* window, double xpos, double ypos);
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 
 void drawRect(float x1, float y1, float x2, float y2, float r, float g, float b) {
     glColor3f(r, g, b);
@@ -101,6 +108,78 @@ bool isInsideNDC(double mx, double my, int width, int height, float x1, float y1
     return nx >= x1 && nx <= x2 && ny >= y1 && ny <= y2;
 }
 
+// Draw transformation panel
+void drawTransformPanel(float panelX1, float panelY1, float panelWidth, float panelHeight,
+                       const std::string& title, float values[3], int width, int height) {
+    // Panel background
+    drawRect(panelX1, panelY1, panelX1 + panelWidth, panelY1 + panelHeight, 0.4f, 0.4f, 0.4f);
+    drawOutlineRect(panelX1, panelY1, panelX1 + panelWidth, panelY1 + panelHeight, 0.0f, 0.0f, 0.0f, 2.0f);
+
+    // Title
+    glColor3f(1.0f, 1.0f, 1.0f);
+    drawText(title, panelX1 + pxToNDCx(10, width), panelY1 + panelHeight - pxToNDCy(25, height), GLUT_BITMAP_HELVETICA_18);
+
+    // "Vector" label
+    drawText("Vector", panelX1 + pxToNDCx(15, width), panelY1 + panelHeight - pxToNDCy(45, height), GLUT_BITMAP_HELVETICA_12);
+
+    float inputBoxHeight = pxToNDCy(25, height);
+    float inputBoxWidth = panelWidth - pxToNDCx(30, width);
+    float inputY = panelY1 + panelHeight - pxToNDCy(70, height);
+
+    // X input box
+    drawRect(panelX1 + pxToNDCx(15, width), inputY - inputBoxHeight,
+             panelX1 + pxToNDCx(15, width) + inputBoxWidth, inputY, 0.9f, 0.9f, 0.9f);
+    drawOutlineRect(panelX1 + pxToNDCx(15, width), inputY - inputBoxHeight,
+                   panelX1 + pxToNDCx(15, width) + inputBoxWidth, inputY, 0.0f, 0.0f, 0.0f, 1.0f);
+
+    // X label and value
+    glColor3f(0.2f, 0.2f, 0.2f);
+    char xValue[20];
+    snprintf(xValue, sizeof(xValue), "X: %7.3f", values[0]);
+    drawText(xValue, panelX1 + pxToNDCx(20, width), inputY - pxToNDCy(15, height), GLUT_BITMAP_HELVETICA_12);
+
+    // Y input box
+    inputY -= inputBoxHeight + pxToNDCy(2, height);
+    drawRect(panelX1 + pxToNDCx(15, width), inputY - inputBoxHeight,
+             panelX1 + pxToNDCx(15, width) + inputBoxWidth, inputY, 0.9f, 0.9f, 0.9f);
+    drawOutlineRect(panelX1 + pxToNDCx(15, width), inputY - inputBoxHeight,
+                   panelX1 + pxToNDCx(15, width) + inputBoxWidth, inputY, 0.0f, 0.0f, 0.0f, 1.0f);
+
+    // Y label and value
+    char yValue[20];
+    snprintf(yValue, sizeof(yValue), "Y: %7.3f", values[1]);
+    drawText(yValue, panelX1 + pxToNDCx(20, width), inputY - pxToNDCy(15, height), GLUT_BITMAP_HELVETICA_12);
+
+    // Z input box
+    inputY -= inputBoxHeight + pxToNDCy(2, height);
+    drawRect(panelX1 + pxToNDCx(15, width), inputY - inputBoxHeight,
+             panelX1 + pxToNDCx(15, width) + inputBoxWidth, inputY, 0.9f, 0.9f, 0.9f);
+    drawOutlineRect(panelX1 + pxToNDCx(15, width), inputY - inputBoxHeight,
+                   panelX1 + pxToNDCx(15, width) + inputBoxWidth, inputY, 0.0f, 0.0f, 0.0f, 1.0f);
+
+    // Z label and value
+    char zValue[20];
+    snprintf(zValue, sizeof(zValue), "Z: %7.3f", values[2]);
+    drawText(zValue, panelX1 + pxToNDCx(20, width), inputY - pxToNDCy(15, height), GLUT_BITMAP_HELVETICA_12);
+
+    // Reset button
+    float resetBtnY = inputY - inputBoxHeight - pxToNDCy(10, height);
+    float resetBtnWidth = pxToNDCx(60, width);
+    float resetBtnHeight = pxToNDCy(25, height);
+    bool hoverReset = isInsideNDC(mouseX, mouseY, width, height,
+                                 panelX1 + pxToNDCx(15, width), resetBtnY - resetBtnHeight,
+                                 panelX1 + pxToNDCx(15, width) + resetBtnWidth, resetBtnY);
+
+    drawRect(panelX1 + pxToNDCx(15, width), resetBtnY - resetBtnHeight,
+             panelX1 + pxToNDCx(15, width) + resetBtnWidth, resetBtnY,
+             0.32f + (hoverReset ? 0.08f : 0.0f), 0.32f + (hoverReset ? 0.08f : 0.0f), 0.32f + (hoverReset ? 0.08f : 0.0f));
+    drawOutlineRect(panelX1 + pxToNDCx(15, width), resetBtnY - resetBtnHeight,
+                   panelX1 + pxToNDCx(15, width) + resetBtnWidth, resetBtnY, 0,0,0,1.0f);
+
+    glColor3f(1,1,1);
+    drawText("Reset", panelX1 + pxToNDCx(25, width), resetBtnY - pxToNDCy(15, height), GLUT_BITMAP_HELVETICA_12);
+}
+
 int main() {
     if (!glfwInit()) return -1;
 
@@ -126,6 +205,7 @@ int main() {
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
     glfwSetMouseButtonCallback(window, mouse_button_callback);
     glfwSetCursorPosCallback(window, cursor_position_callback);
+    glfwSetScrollCallback(window, scroll_callback);
 
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
         std::cout << "Failed to initialize GLAD\n";
@@ -150,7 +230,6 @@ int main() {
             width = MIN_WINDOW_WIDTH + leftBarWidth + rightBarWidth;
         }
 
-
         // NDC positions for bar edges
         float leftEdgeNDC = -1.0f + (2.0f * leftBarWidth / width);
         float rightEdgeNDC = 1.0f - (2.0f * rightBarWidth / width);
@@ -158,25 +237,20 @@ int main() {
 
         // handle sizes in NDC
         float handleNDC_W = 2.0f * HANDLE_PX / width;
-        float handleNDC_H = 2.0f * HANDLE_PX / height;
-        float topLimitNDC = topEdgeNDC;
 
-        // Draw side bars and top bar
-        drawRect(-1.0f, -1.0f, leftEdgeNDC, topLimitNDC, 0.5f, 0.5f, 0.5f);
-        drawRect(rightEdgeNDC, -1.0f, 1.0f, topLimitNDC, 0.5f, 0.5f, 0.5f);
-        drawRect(-1.0f, topEdgeNDC, 1.0f, 1.0f, 0.45f, 0.45f, 0.45f);
+        // Draw side bars and top bar - FIXED: Sidebars start from below top bar
+        drawRect(-1.0f, -1.0f, leftEdgeNDC, topEdgeNDC, 0.5f, 0.5f, 0.5f); // Left sidebar
+        drawRect(rightEdgeNDC, -1.0f, 1.0f, topEdgeNDC, 0.5f, 0.5f, 0.5f); // Right sidebar
+        drawRect(-1.0f, topEdgeNDC, 1.0f, 1.0f, 0.45f, 0.45f, 0.45f); // Top bar
 
-        // handles (left/right only)
-        drawRect(leftEdgeNDC - handleNDC_W, -1.0f, leftEdgeNDC, topLimitNDC, 0.7f, 0.7f, 0.7f);
-        drawRect(rightEdgeNDC, -1.0f, rightEdgeNDC + handleNDC_W, topLimitNDC, 0.7f, 0.7f, 0.7f);
-        // top handle intentionally not interactive (static top bar)
+        // handles (left/right only) - FIXED: Handles also start from below top bar
+        drawRect(leftEdgeNDC - handleNDC_W, -1.0f, leftEdgeNDC, topEdgeNDC, 0.7f, 0.7f, 0.7f);
+        drawRect(rightEdgeNDC, -1.0f, rightEdgeNDC + handleNDC_W, topEdgeNDC, 0.7f, 0.7f, 0.7f);
 
         // UI layout metrics (pixel based -> convert to NDC)
         float marginPx = 10.0f;
         float marginX = pxToNDCx((int)marginPx, width);
-        float marginY = pxToNDCy((int)8, height); // vertical spacing small
 
-        float topBarY1 = topEdgeNDC;
         float topBarY2 = 1.0f;
 
         // Left-most "Blender Lite" box
@@ -194,14 +268,14 @@ int main() {
 
         // text "Blender Lite" in red centered
         glColor3f(1.0f, 0.0f, 0.0f);
-        float textX = (blenderX1 + blenderX2) * 0.5f - 0.06f; // small offset to center in GLUT raster coords
+        float textX = (blenderX1 + blenderX2) * 0.5f - 0.06f;
         float textY = (blenderY1 + blenderY2) * 0.5f - 0.01f;
         drawText("Blender Lite", textX, textY, GLUT_BITMAP_HELVETICA_18);
 
         // To the right of blender box: stack Save (top) and Save as (below),
         // and under them Undo (left) and Redo (right).
         float groupX1 = blenderX2 + marginX;
-        float groupX2 = groupX1 + pxToNDCx((int) (140), width);
+        float groupX2 = groupX1 + pxToNDCx((int)(140), width);
 
         // vertical positions: make vertical stack fit
         float buttonHpx = 28.0f;
@@ -257,7 +331,7 @@ int main() {
         float pnameH = pxToNDCy((int)pnameHpx, height);
         float pnameY2 = blenderY2;
         float pnameY1 = pnameY2 - pnameH - pxToNDCy(6, height);
-        drawRect(centerX1, pnameY1, centerX2, pnameY2, 0.9f, 0.9f, 0.9f); // lighter box for placeholder
+        drawRect(centerX1, pnameY1, centerX2, pnameY2, 0.9f, 0.9f, 0.9f);
         drawOutlineRect(centerX1, pnameY1, centerX2, pnameY2, 0,0,0,1.0f);
         glColor3f(0.2f,0.2f,0.2f);
         drawText("Project Name", centerX1 + 0.03f, (pnameY1 + pnameY2)*0.5f - 0.01f, GLUT_BITMAP_HELVETICA_18);
@@ -275,80 +349,10 @@ int main() {
         glColor3f(1,1,1);
         drawText("New Project", npX1 + 0.01f, (npY1 + npY2)*0.5f - 0.01f, GLUT_BITMAP_HELVETICA_18);
 
-        // RIGHT SIDE: Colors panel (title, perfect square swatches, V button, Shades)
-        float colorsPanelWpx = 220.0f;
-        float colorsPanelHpx = 150.0f;
-        float colorsPanelW = pxToNDCx((int)colorsPanelWpx, width);
-        float colorsPanelH = pxToNDCy((int)colorsPanelHpx, height);
-
-        float panelMarginPx = 10.0f;
-        float colorsX2 = rightEdgeNDC - pxToNDCx((int)panelMarginPx, width);
-        float colorsX1 = colorsX2 - colorsPanelW;
-        float colorsY2 = topBarY2 - pxToNDCy(8, height);
-        float colorsY1 = colorsY2 - colorsPanelH;
-
-        // Draw background and outline
-        drawRect(colorsX1, colorsY1, colorsX2, colorsY2, 0.4f, 0.4f, 0.4f);
-        drawOutlineRect(colorsX1, colorsY1, colorsX2, colorsY2, 0, 0, 0, 2.0f);
-
-        // Title "Colors" at top
-        glColor3f(1, 1, 1);
-        drawText("Colors", colorsX1 + 0.02f, colorsY2 - pxToNDCy(18, height), GLUT_BITMAP_HELVETICA_18);
-
-        // Swatches row (6 perfect squares)
-        int numColors = 6;
-        float swatchPx = 24.0f;
-        float swatchGapPx = 8.0f;
-        float swatchSize = pxToNDCx((int)swatchPx, width); // use x-scale to keep perfect squares visually consistent
-        float swatchGap = pxToNDCx((int)swatchGapPx, width);
-        float startSwX = colorsX1 + pxToNDCx(10, width);
-        float swYTop = colorsY2 - pxToNDCy(40, height);
-        float swYBottom = swYTop - swatchSize;
-
-        struct C { float r, g, b; };
-        C colorArr[6] = {{0,0,0}, {1,1,1}, {1,0,0}, {0,1,0}, {0,0,1}, {1,0,1}};
-        for (int i = 0; i < numColors; i++) {
-            float sx1 = startSwX + i * (swatchSize + swatchGap);
-            float sx2 = sx1 + swatchSize;
-            bool hover = isInsideNDC(mouseX, mouseY, width, height, sx1, swYBottom, sx2, swYTop);
-            float expandPx = hover ? 4.0f : 0.0f;
-            float ex = pxToNDCx((int)expandPx, width);
-            drawRect(sx1 - ex, swYBottom - ex, sx2 + ex, swYTop + ex, colorArr[i].r, colorArr[i].g, colorArr[i].b);
-            drawOutlineRect(sx1 - ex, swYBottom - ex, sx2 + ex, swYTop + ex, 0, 0, 0, 1.0f);
-        }
-
-        // "V" button directly under color swatches (left aligned)
-        float vBtnPx = 28.0f;
-        float vW = pxToNDCx((int)vBtnPx, width);
-        float vX1 = startSwX;
-        float vX2 = vX1 + vW;
-        float vY2 = swYBottom - pxToNDCy(10, height);
-        float vY1 = vY2 - pxToNDCy((int)vBtnPx, height);
-        bool hoverV = isInsideNDC(mouseX, mouseY, width, height, vX1, vY1, vX2, vY2);
-        drawRect(vX1, vY1, vX2, vY2, hoverV ? 0.6f : 0.25f, hoverV ? 0.6f : 0.25f, hoverV ? 0.6f : 0.25f);
-        drawOutlineRect(vX1, vY1, vX2, vY2, 0, 0, 0, 1.0f);
-        glColor3f(1,1,1);
-        drawText("V", vX1 + 0.01f, (vY1 + vY2)*0.5f - 0.01f, GLUT_BITMAP_HELVETICA_18);
-
-        // Shades box to the right of V (aligned vertically)
-        float shadesWpx = 110.0f;
-        float shadesHpx = 28.0f;
-        float shadesW = pxToNDCx((int)shadesWpx, width);
-        float shadesH = pxToNDCy((int)shadesHpx, height);
-        float shadesX1 = vX2 + pxToNDCx(10, width);
-        float shadesX2 = shadesX1 + shadesW;
-        float shadesY2 = vY2;
-        float shadesY1 = vY2 - shadesH;
-        bool hoverShades = isInsideNDC(mouseX, mouseY, width, height, shadesX1, shadesY1, shadesX2, shadesY2);
-        drawRect(shadesX1, shadesY1, shadesX2, shadesY2, 0.3f, 0.3f, 0.3f);
-        drawOutlineRect(shadesX1, shadesY1, shadesX2, shadesY2, 0, 0, 0, 1.0f);
-        glColor3f(1,1,1);
-        drawText("Shades", shadesX1 + 0.02f, (shadesY1 + shadesY2)*0.5f - 0.01f, GLUT_BITMAP_HELVETICA_18);
-
-        // Camera button at very right with rounded-ish square and circle lens
+        // Camera button at very right with rounded-ish square and circle lens - MOVED 10px LEFT
         float camSizePx = 48.0f;
         float camSize = pxToNDCx((int)camSizePx, width);
-        float camX2 = 0.95f - marginX;
+        float camX2 = 1.0f - pxToNDCx(50, width);
         float camX1 = camX2 - camSize;
         float camY2 = blenderY2;
         float camY1 = camY2 - pxToNDCy((int)camSizePx, height);
@@ -372,7 +376,138 @@ int main() {
         drawText("Take a", camCx - 0.05f, textLine1Y, GLUT_BITMAP_HELVETICA_12);
         drawText("Screenshot", camCx - 0.09f, textLine2Y, GLUT_BITMAP_HELVETICA_12);
 
-        // Big central canvas area border (visual)
+        // COLORS PANEL - Positioned between Project Name and Camera button
+        float colorsPanelWpx = 220.0f;
+        float colorsPanelHpx = 80.0f; // Reduced height to fit in top bar
+        float colorsPanelW = pxToNDCx((int)colorsPanelWpx, width);
+        float colorsPanelH = pxToNDCy((int)colorsPanelHpx, height);
+
+        // Calculate available space between Project Name and Camera
+        float projectNameRight = centerX2;
+        float cameraLeft = camX1;
+        float availableSpace = cameraLeft - projectNameRight;
+
+        // Position colors panel in the center of available space
+        float colorsX1 = projectNameRight + pxToNDCx(10, width);
+        float colorsX2 = colorsX1 + colorsPanelW;
+
+        // Ensure it doesn't overlap with camera
+        if (colorsX2 > cameraLeft - pxToNDCx(10, width)) {
+            colorsX2 = cameraLeft - pxToNDCx(10, width);
+            colorsX1 = colorsX2 - colorsPanelW;
+        }
+
+        // Position vertically in top bar
+        float colorsY2 = topBarY2 - pxToNDCy(8, height);
+        float colorsY1 = colorsY2 - colorsPanelH;
+
+        // Draw background and outline
+        drawRect(colorsX1, colorsY1, colorsX2, colorsY2, 0.4f, 0.4f, 0.4f);
+        drawOutlineRect(colorsX1, colorsY1, colorsX2, colorsY2, 0, 0, 0, 2.0f);
+
+        // Title "Colors" at top
+        glColor3f(1, 1, 1);
+        drawText("Colors", colorsX1 + 0.02f, colorsY2 - pxToNDCy(18, height), GLUT_BITMAP_HELVETICA_12);
+
+        // Swatches row (6 perfect squares) - compact layout
+        int numColors = 6;
+        float swatchPx = 20.0f; // Smaller swatches
+        float swatchGapPx = 5.0f; // Smaller gap
+        float swatchSize = pxToNDCx((int)swatchPx, width);
+        float swatchGap = pxToNDCx((int)swatchGapPx, width);
+        float startSwX = colorsX1 + pxToNDCx(10, width);
+        float swYTop = colorsY2 - pxToNDCy(30, height); // Moved up
+        float swYBottom = swYTop - swatchSize;
+
+        // Fixed struct definition
+        struct Color { float r, g, b; };
+        Color colorArr[6] = {{0,0,0}, {1,1,1}, {1,0,0}, {0,1,0}, {0,0,1}, {1,0,1}};
+        for (int i = 0; i < numColors; i++) {
+            float sx1 = startSwX + i * (swatchSize + swatchGap);
+            float sx2 = sx1 + swatchSize;
+            bool hover = isInsideNDC(mouseX, mouseY, width, height, sx1, swYBottom, sx2, swYTop);
+            float expandPx = hover ? 2.0f : 0.0f;
+            float ex = pxToNDCx((int)expandPx, width);
+            drawRect(sx1 - ex, swYBottom - ex, sx2 + ex, swYTop + ex, colorArr[i].r, colorArr[i].g, colorArr[i].b);
+            drawOutlineRect(sx1 - ex, swYBottom - ex, sx2 + ex, swYTop + ex, 0, 0, 0, 1.0f);
+        }
+
+        // "V" button and "Shades" box in a compact row below swatches
+        float vBtnPx = 22.0f;
+        float vW = pxToNDCx((int)vBtnPx, width);
+        float vX1 = startSwX;
+        float vX2 = vX1 + vW;
+        float vY2 = swYBottom - pxToNDCy(5, height);
+        float vY1 = vY2 - pxToNDCy((int)vBtnPx, height);
+        bool hoverV = isInsideNDC(mouseX, mouseY, width, height, vX1, vY1, vX2, vY2);
+        drawRect(vX1, vY1, vX2, vY2, hoverV ? 0.6f : 0.25f, hoverV ? 0.6f : 0.25f, hoverV ? 0.6f : 0.25f);
+        drawOutlineRect(vX1, vY1, vX2, vY2, 0, 0, 0, 1.0f);
+        glColor3f(1,1,1);
+        drawText("V", vX1 + 0.005f, (vY1 + vY2)*0.5f - 0.01f, GLUT_BITMAP_HELVETICA_12);
+
+        // Shades box to the right of V
+        float shadesWpx = 80.0f;
+        float shadesHpx = 22.0f;
+        float shadesW = pxToNDCx((int)shadesWpx, width);
+        float shadesH = pxToNDCy((int)shadesHpx, height);
+        float shadesX1 = vX2 + pxToNDCx(5, width);
+        float shadesX2 = shadesX1 + shadesW;
+        float shadesY2 = vY2;
+        float shadesY1 = vY2 - shadesH;
+        isInsideNDC(mouseX, mouseY, width, height, shadesX1, shadesY1, shadesX2, shadesY2);
+        drawRect(shadesX1, shadesY1, shadesX2, shadesY2, 0.3f, 0.3f, 0.3f);
+        drawOutlineRect(shadesX1, shadesY1, shadesX2, shadesY2, 0, 0, 0, 1.0f);
+        glColor3f(1,1,1);
+        drawText("Shades", shadesX1 + 0.01f, (shadesY1 + shadesY2)*0.5f - 0.01f, GLUT_BITMAP_HELVETICA_12);
+
+        // RIGHT SIDEBAR: Vector panels moved slightly towards the top (10px up)
+        float panelWidth = pxToNDCx((int)(rightBarWidth * 0.85f), width);
+        float panelHeight = pxToNDCy(180, height);
+        float panelGap = pxToNDCy(15, height);
+
+        // Calculate total height of all panels
+        float totalPanelsHeight = (panelHeight * 3) + (panelGap * 2);
+
+        // Start from bottom and work upwards
+        float verticalOffset = pxToNDCy(50, height); // 50 pixels up
+        float panelStartY = -1.0f + totalPanelsHeight + rightPanelScroll + verticalOffset;
+
+        // Rotate panel at the very bottom (moved up)
+        drawTransformPanel(rightEdgeNDC + pxToNDCx(5, width), -1.0f + rightPanelScroll + verticalOffset,
+                          panelWidth, panelHeight,
+                          "Rotation", rotate, width, height);
+
+        // Scale panel above rotate (moved up)
+        float scalePanelY = -1.0f + panelHeight + panelGap + rightPanelScroll + verticalOffset;
+        drawTransformPanel(rightEdgeNDC + pxToNDCx(5, width), scalePanelY,
+                          panelWidth, panelHeight,
+                          "Scaling", scale, width, height);
+
+        // Translate panel at the top (closest to top bar, moved up)
+        float translatePanelY = -1.0f + (panelHeight * 2) + (panelGap * 2) + rightPanelScroll + verticalOffset;
+        drawTransformPanel(rightEdgeNDC + pxToNDCx(5, width), translatePanelY,
+                          panelWidth, panelHeight,
+                          "Translate", translate, width, height);
+
+        // Scroll bar for right panel
+        float scrollBarWidth = pxToNDCx(8, width);
+        float scrollBarX = 1.0f - scrollBarWidth; // Right edge of screen
+        float scrollBarHeight = topEdgeNDC - (-1.0f); // From bottom to top bar
+        float scrollThumbHeight = scrollBarHeight * 0.3f;
+        float maxScroll = totalPanelsHeight - (topEdgeNDC - (-1.0f));
+        if (maxScroll < 0) maxScroll = 0;
+        float scrollProgress = 0.0f;
+        if (maxScroll > 0) {
+            scrollProgress = std::max(0.0f, std::min(1.0f, -rightPanelScroll / maxScroll));
+        }
+        float scrollThumbY = -1.0f + (1.0f - scrollProgress) * scrollBarHeight;
+
+        // Scroll bar background
+        drawRect(scrollBarX, -1.0f, scrollBarX + scrollBarWidth, topEdgeNDC, 0.3f, 0.3f, 0.3f);
+        // Scroll thumb
+        drawRect(scrollBarX, scrollThumbY - scrollThumbHeight, scrollBarX + scrollBarWidth, scrollThumbY, 0.6f, 0.6f, 0.6f);
+
+        // Big central canvas area border
         float canvasX1 = leftEdgeNDC + pxToNDCx(6, width);
         float canvasX2 = rightEdgeNDC - pxToNDCx(6, width);
         float canvasY1 = -1.0f;
@@ -391,6 +526,7 @@ int main() {
 
 // Callbacks & input
 void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
+    (void)window;
     glViewport(0,0,width,height);
 }
 
@@ -406,18 +542,16 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 
     float leftEdge = leftBarWidth;
     float rightEdge = width - rightBarWidth;
-    float topEdge = topBarHeight;
 
     if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
-        // prioritize drag handles for left and right only
         if (xpos >= leftEdge - HANDLE_PX && xpos <= leftEdge) resizingLeft = true;
         else if (xpos >= rightEdge && xpos <= rightEdge + HANDLE_PX) resizingRight = true;
-        // intentionally do NOT allow top resizing (top bar is static)
         lastX = xpos;
         lastY = ypos;
     } else if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE) {
         resizingLeft = resizingRight = false;
     }
+    (void)mods;
 }
 
 void cursor_position_callback(GLFWwindow* window, double xpos, double ypos) {
@@ -428,7 +562,6 @@ void cursor_position_callback(GLFWwindow* window, double xpos, double ypos) {
     int width, height;
     glfwGetWindowSize(window, &width, &height);
     double dx = xpos - lastX;
-    double dy = ypos - lastY;
     lastX = xpos;
     lastY = ypos;
 
@@ -438,5 +571,12 @@ void cursor_position_callback(GLFWwindow* window, double xpos, double ypos) {
     else if (resizingRight) {
         rightBarWidth = std::max(MIN_RIGHT_BAR_WIDTH, std::min((float)(rightBarWidth - dx), width - leftBarWidth - MIN_WINDOW_WIDTH));
     }
+}
 
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
+    (void)window;
+    (void)xoffset;
+    rightPanelScroll += yoffset * 20.0f;
+    float maxScroll = 400.0f;
+    rightPanelScroll = std::max(-maxScroll, std::min(0.0f, rightPanelScroll));
 }
