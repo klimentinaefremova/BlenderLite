@@ -12,6 +12,209 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 void cursor_position_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 
+void draw3DAxes(float canvasX1, float canvasY1, float canvasX2, float canvasY2, int width, int height) {
+    // Save current matrix state
+    glMatrixMode(GL_PROJECTION);
+    glPushMatrix();
+    glLoadIdentity();
+
+    // Set up orthographic projection for the canvas area
+    float canvasWidth = canvasX2 - canvasX1;
+    float canvasHeight = canvasY2 - canvasY1;
+    glOrtho(canvasX1, canvasX2, canvasY1, canvasY2, -1.0f, 1.0f);
+
+    glMatrixMode(GL_MODELVIEW);
+    glPushMatrix();
+    glLoadIdentity();
+
+    // Calculate center of canvas
+    float centerX = (canvasX1 + canvasX2) * 0.5f;
+    float centerY = (canvasY1 + canvasY2) * 0.5f;
+
+    // Axis length (half the original size)
+    float axisLength = 0.1f;
+    float arrowSize = 0.015f;
+
+    // Draw X axis (Red) - lighter color if selected
+    if (appState.axisSelected[0]) {
+        glColor3f(1.0f, 0.5f, 0.5f); // Light red when selected
+    } else {
+        glColor3f(1.0f, 0.0f, 0.0f); // Normal red
+    }
+    glBegin(GL_LINES);
+    glVertex2f(centerX, centerY);
+    glVertex2f(centerX + axisLength, centerY);
+    glEnd();
+
+    // X arrow
+    glBegin(GL_TRIANGLES);
+    glVertex2f(centerX + axisLength, centerY);
+    glVertex2f(centerX + axisLength - arrowSize, centerY - arrowSize);
+    glVertex2f(centerX + axisLength - arrowSize, centerY + arrowSize);
+    glEnd();
+
+    // Draw Y axis (Green) - lighter color if selected
+    if (appState.axisSelected[1]) {
+        glColor3f(0.5f, 1.0f, 0.5f); // Light green when selected
+    } else {
+        glColor3f(0.0f, 1.0f, 0.0f); // Normal green
+    }
+    glBegin(GL_LINES);
+    glVertex2f(centerX, centerY);
+    glVertex2f(centerX, centerY + axisLength);
+    glEnd();
+
+    // Y arrow
+    glBegin(GL_TRIANGLES);
+    glVertex2f(centerX, centerY + axisLength);
+    glVertex2f(centerX - arrowSize, centerY + axisLength - arrowSize);
+    glVertex2f(centerX + arrowSize, centerY + axisLength - arrowSize);
+    glEnd();
+
+    // Draw Z axis (Blue) - lighter color if selected
+    if (appState.axisSelected[2]) {
+        glColor3f(0.5f, 0.5f, 1.0f); // Light blue when selected
+    } else {
+        glColor3f(0.0f, 0.0f, 1.0f); // Normal blue
+    }
+    glBegin(GL_LINES);
+    glVertex2f(centerX, centerY);
+    glVertex2f(centerX - axisLength * 0.7f, centerY - axisLength * 0.7f);
+    glEnd();
+
+    // Z arrow
+    glBegin(GL_TRIANGLES);
+    glVertex2f(centerX - axisLength * 0.7f, centerY - axisLength * 0.7f);
+    glVertex2f(centerX - axisLength * 0.7f + arrowSize, centerY - axisLength * 0.7f + arrowSize);
+    glVertex2f(centerX - axisLength * 0.7f + arrowSize * 0.5f, centerY - axisLength * 0.7f - arrowSize * 0.5f);
+    glEnd();
+
+    // Draw axis labels with corresponding colors
+    if (appState.axisSelected[0]) {
+        glColor3f(1.0f, 0.5f, 0.5f);
+    } else {
+        glColor3f(1.0f, 0.0f, 0.0f);
+    }
+    PrimitiveRenderer::drawText("X", centerX + axisLength + 0.01f, centerY - 0.005f, GLUT_BITMAP_HELVETICA_12);
+
+    if (appState.axisSelected[1]) {
+        glColor3f(0.5f, 1.0f, 0.5f);
+    } else {
+        glColor3f(0.0f, 1.0f, 0.0f);
+    }
+    PrimitiveRenderer::drawText("Y", centerX - 0.005f, centerY + axisLength + 0.01f, GLUT_BITMAP_HELVETICA_12);
+
+    if (appState.axisSelected[2]) {
+        glColor3f(0.5f, 0.5f, 1.0f);
+    } else {
+        glColor3f(0.0f, 0.0f, 1.0f);
+    }
+    PrimitiveRenderer::drawText("Z", centerX - axisLength * 0.7f - 0.015f, centerY - axisLength * 0.7f - 0.015f, GLUT_BITMAP_HELVETICA_12);
+
+    // Restore matrix state
+    glPopMatrix();
+    glMatrixMode(GL_PROJECTION);
+    glPopMatrix();
+    glMatrixMode(GL_MODELVIEW);
+}
+
+void drawAxisButtons(float leftEdgeNDC, float canvasY1, float canvasY2, int width, int height) {
+    // Save current matrix state
+    glMatrixMode(GL_PROJECTION);
+    glPushMatrix();
+    glLoadIdentity();
+
+    // Use the full screen projection since we're positioning relative to leftEdgeNDC
+    glOrtho(-1.0f, 1.0f, -1.0f, 1.0f, -1.0f, 1.0f);
+
+    glMatrixMode(GL_MODELVIEW);
+    glPushMatrix();
+    glLoadIdentity();
+
+    // Button size and spacing
+    float buttonSize = 0.035f; // Changed back to 0.035 as requested
+    float buttonGap = 0.002f;  // Scaled gap
+    float marginY = 0.03f;     // Bottom margin
+
+    // Position buttons attached to the left sidebar's right edge
+    float startX = leftEdgeNDC; // Directly on the edge of left sidebar
+    float startY = canvasY1 + marginY;
+
+    // X button (Red)
+    float xBtnX1 = startX;
+    float xBtnX2 = xBtnX1 + buttonSize;
+    float xBtnY1 = startY;
+    float xBtnY2 = xBtnY1 + buttonSize;
+
+    bool hoverX = PrimitiveRenderer::isInsideNDC(appState.mouseX, appState.mouseY, width, height, xBtnX1, xBtnY1, xBtnX2, xBtnY2);
+
+    if (appState.axisSelected[0]) {
+        PrimitiveRenderer::drawRect(xBtnX1, xBtnY1, xBtnX2, xBtnY2, 1.0f, 0.5f, 0.5f); // Light red when selected
+    } else if (hoverX) {
+        PrimitiveRenderer::drawRect(xBtnX1, xBtnY1, xBtnX2, xBtnY2, 1.0f, 0.8f, 0.8f); // Very light red when hovered
+    } else {
+        PrimitiveRenderer::drawRect(xBtnX1, xBtnY1, xBtnX2, xBtnY2, 1.0f, 0.0f, 0.0f); // Normal red
+    }
+    PrimitiveRenderer::drawOutlineRect(xBtnX1, xBtnY1, xBtnX2, xBtnY2, 0.0f, 0.0f, 0.0f, 1.5f);
+
+    glColor3f(1.0f, 1.0f, 1.0f);
+    PrimitiveRenderer::drawText("X", xBtnX1 + buttonSize * 0.3f, xBtnY1 + buttonSize * 0.3f, GLUT_BITMAP_HELVETICA_10);
+
+    // Y button (Green)
+    float yBtnX1 = xBtnX2 + buttonGap;
+    float yBtnX2 = yBtnX1 + buttonSize;
+    float yBtnY1 = startY;
+    float yBtnY2 = yBtnY1 + buttonSize;
+
+    bool hoverY = PrimitiveRenderer::isInsideNDC(appState.mouseX, appState.mouseY, width, height, yBtnX1, yBtnY1, yBtnX2, yBtnY2);
+
+    if (appState.axisSelected[1]) {
+        PrimitiveRenderer::drawRect(yBtnX1, yBtnY1, yBtnX2, yBtnY2, 0.5f, 1.0f, 0.5f); // Light green when selected
+    } else if (hoverY) {
+        PrimitiveRenderer::drawRect(yBtnX1, yBtnY1, yBtnX2, yBtnY2, 0.8f, 1.0f, 0.8f); // Very light green when hovered
+    } else {
+        PrimitiveRenderer::drawRect(yBtnX1, yBtnY1, yBtnX2, yBtnY2, 0.0f, 1.0f, 0.0f); // Normal green
+    }
+    PrimitiveRenderer::drawOutlineRect(yBtnX1, yBtnY1, yBtnX2, yBtnY2, 0.0f, 0.0f, 0.0f, 1.5f);
+
+    glColor3f(1.0f, 1.0f, 1.0f);
+    PrimitiveRenderer::drawText("Y", yBtnX1 + buttonSize * 0.3f, yBtnY1 + buttonSize * 0.3f, GLUT_BITMAP_HELVETICA_10);
+
+    // Z button (Blue)
+    float zBtnX1 = yBtnX2 + buttonGap;
+    float zBtnX2 = zBtnX1 + buttonSize;
+    float zBtnY1 = startY;
+    float zBtnY2 = zBtnY1 + buttonSize;
+
+    bool hoverZ = PrimitiveRenderer::isInsideNDC(appState.mouseX, appState.mouseY, width, height, zBtnX1, zBtnY1, zBtnX2, zBtnY2);
+
+    if (appState.axisSelected[2]) {
+        PrimitiveRenderer::drawRect(zBtnX1, zBtnY1, zBtnX2, zBtnY2, 0.5f, 0.5f, 1.0f); // Light blue when selected
+    } else if (hoverZ) {
+        PrimitiveRenderer::drawRect(zBtnX1, zBtnY1, zBtnX2, zBtnY2, 0.8f, 0.8f, 1.0f); // Very light blue when hovered
+    } else {
+        PrimitiveRenderer::drawRect(zBtnX1, zBtnY1, zBtnX2, zBtnY2, 0.0f, 0.0f, 1.0f); // Normal blue
+    }
+    PrimitiveRenderer::drawOutlineRect(zBtnX1, zBtnY1, zBtnX2, zBtnY2, 0.0f, 0.0f, 0.0f, 1.5f);
+
+    glColor3f(1.0f, 1.0f, 1.0f);
+    PrimitiveRenderer::drawText("Z", zBtnX1 + buttonSize * 0.3f, zBtnY1 + buttonSize * 0.3f, GLUT_BITMAP_HELVETICA_10);
+
+    // Store hover state for mouse click detection
+    appState.axisHovered[0] = hoverX;
+    appState.axisHovered[1] = hoverY;
+    appState.axisHovered[2] = hoverZ;
+
+    // Restore matrix state
+    glPopMatrix();
+    glMatrixMode(GL_PROJECTION);
+    glPopMatrix();
+    glMatrixMode(GL_MODELVIEW);
+}
+
+
+
+
 void drawTopBarUI(int width, int height) {
     float marginPx = 10.0f;
     float marginX = PrimitiveRenderer::pxToNDCx((int)marginPx, width);
@@ -261,11 +464,11 @@ int main() {
 
         float texturesPanelY = -1.0f + appState.leftPanelTexturesScroll + leftVerticalOffset;
         Panels::drawTexturesPanel(-1.0f + PrimitiveRenderer::pxToNDCx(5, width), texturesPanelY,
-                                 leftPanelWidth, leftPanelHeight, appState, width, height);
+            leftPanelWidth, leftPanelHeight, appState, width, height);
 
         float shapesPanelY = texturesPanelY + leftPanelHeight + leftPanelGap + appState.leftPanelShapesScroll;
         Panels::drawShapesPanel(-1.0f + PrimitiveRenderer::pxToNDCx(5, width), shapesPanelY,
-                               leftPanelWidth, leftPanelHeight, appState, width, height);
+            leftPanelWidth, leftPanelHeight, appState, width, height);
 
         float panelWidth = PrimitiveRenderer::pxToNDCx((int)(appState.rightBarWidth * 0.85f), width);
         float panelHeight = PrimitiveRenderer::pxToNDCy(180, height);
@@ -274,18 +477,18 @@ int main() {
         float rightVerticalOffset = PrimitiveRenderer::pxToNDCy(50, height);
 
         Panels::drawTransformPanel(rightEdgeNDC + PrimitiveRenderer::pxToNDCx(5, width), -1.0f + appState.rightPanelScroll + rightVerticalOffset,
-                                  panelWidth, panelHeight,
-                                  "Rotation", appState.rotate, appState, width, height);
+            panelWidth, panelHeight,
+            "Rotation", appState.rotate, appState, width, height);
 
         float scalePanelY = -1.0f + panelHeight + panelGap + appState.rightPanelScroll + rightVerticalOffset;
         Panels::drawTransformPanel(rightEdgeNDC + PrimitiveRenderer::pxToNDCx(5, width), scalePanelY,
-                                  panelWidth, panelHeight,
-                                  "Scaling", appState.scale, appState, width, height);
+            panelWidth, panelHeight,
+            "Scaling", appState.scale, appState, width, height);
 
         float translatePanelY = -1.0f + (panelHeight * 2) + (panelGap * 2) + appState.rightPanelScroll + rightVerticalOffset;
         Panels::drawTransformPanel(rightEdgeNDC + PrimitiveRenderer::pxToNDCx(5, width), translatePanelY,
-                                  panelWidth, panelHeight,
-                                  "Translate", appState.translate, appState, width, height);
+            panelWidth, panelHeight,
+            "Translate", appState.translate, appState, width, height);
 
         float scrollBarWidth = PrimitiveRenderer::pxToNDCx(8, width);
         float scrollBarX = 1.0f - scrollBarWidth;
@@ -308,6 +511,12 @@ int main() {
         float canvasY2 = topEdgeNDC - PrimitiveRenderer::pxToNDCy(6, height);
         PrimitiveRenderer::drawRect(canvasX1, canvasY1, canvasX2, canvasY2, 0.12f, 0.12f, 0.15f);
         PrimitiveRenderer::drawOutlineRect(canvasX1, canvasY1, canvasX2, canvasY2, 0.2f, 0.2f, 0.2f, 1.0f);
+
+        // Draw 3D axes in the center of the canvas
+        draw3DAxes(canvasX1, canvasY1, canvasX2, canvasY2, width, height);
+
+        // Draw axis buttons attached to left sidebar's right edge
+        drawAxisButtons(leftEdgeNDC, canvasY1, canvasY2, width, height);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
@@ -337,6 +546,35 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
     float rightEdge = width - appState.rightBarWidth;
 
     if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
+        // Toggle axis selection when clicking axis buttons
+        if (appState.axisHovered[0]) {
+            appState.axisSelected[0] = !appState.axisSelected[0];
+            std::cout << "X axis " << (appState.axisSelected[0] ? "selected" : "deselected") << "!\n";
+        }
+        if (appState.axisHovered[1]) {
+            appState.axisSelected[1] = !appState.axisSelected[1];
+            std::cout << "Y axis " << (appState.axisSelected[1] ? "selected" : "deselected") << "!\n";
+        }
+        if (appState.axisHovered[2]) {
+            appState.axisSelected[2] = !appState.axisSelected[2];
+            std::cout << "Z axis " << (appState.axisSelected[2] ? "selected" : "deselected") << "!\n";
+        }
+
+        // Check if we're starting to drag any selected axis
+        bool anyAxisSelected = appState.axisSelected[0] || appState.axisSelected[1] || appState.axisSelected[2];
+        if (anyAxisSelected) {
+            appState.draggingAxis = true;
+            appState.dragStartX = xpos;
+            appState.dragStartY = ypos;
+            std::cout << "Started dragging selected axes\n";
+        }
+
+        // Print current selection state
+        std::cout << "Current selection - X:" << appState.axisSelected[0]
+                  << " Y:" << appState.axisSelected[1]
+                  << " Z:" << appState.axisSelected[2] << "\n";
+
+        // Existing resizing logic
         if (xpos >= leftEdge - Constants::HANDLE_PX && xpos <= leftEdge)
             appState.resizingLeft = true;
         else if (xpos >= rightEdge && xpos <= rightEdge + Constants::HANDLE_PX)
@@ -345,6 +583,8 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
         appState.lastY = ypos;
     } else if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE) {
         appState.resizingLeft = appState.resizingRight = false;
+        appState.draggingAxis = false;
+        std::cout << "Stopped dragging\n";
     }
     (void)mods;
 }
@@ -352,6 +592,32 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 void cursor_position_callback(GLFWwindow* window, double xpos, double ypos) {
     appState.mouseX = xpos;
     appState.mouseY = ypos;
+
+    // Handle axis dragging
+    if (appState.draggingAxis) {
+        double dx = xpos - appState.dragStartX;
+        double dy = ypos - appState.dragStartY;
+
+        // Update translation based on selected axes
+        if (appState.axisSelected[0]) { // X axis
+            appState.translate[0] += dx * 0.01f; // Scale factor for sensitivity
+        }
+        if (appState.axisSelected[1]) { // Y axis
+            appState.translate[1] -= dy * 0.01f; // Invert Y for natural dragging
+        }
+        if (appState.axisSelected[2]) { // Z axis
+            appState.translate[2] += (dx + dy) * 0.005f; // Combine X and Y for Z movement
+        }
+
+        appState.dragStartX = xpos;
+        appState.dragStartY = ypos;
+
+        std::cout << "Translation - X:" << appState.translate[0]
+                  << " Y:" << appState.translate[1]
+                  << " Z:" << appState.translate[2] << "\n";
+        return; // Skip resizing logic when dragging axes
+    }
+
     if (!appState.resizingLeft && !appState.resizingRight) return;
 
     int width, height;
@@ -362,13 +628,13 @@ void cursor_position_callback(GLFWwindow* window, double xpos, double ypos) {
 
     if (appState.resizingLeft) {
         appState.leftBarWidth = std::max(Constants::MIN_LEFT_BAR_WIDTH,
-                                       std::min((float)(appState.leftBarWidth + dx),
-                                               width - appState.rightBarWidth - Constants::MIN_WINDOW_WIDTH));
+            std::min((float)(appState.leftBarWidth + dx),
+            width - appState.rightBarWidth - Constants::MIN_WINDOW_WIDTH));
     }
     else if (appState.resizingRight) {
         appState.rightBarWidth = std::max(Constants::MIN_RIGHT_BAR_WIDTH,
-                                        std::min((float)(appState.rightBarWidth - dx),
-                                                width - appState.leftBarWidth - Constants::MIN_WINDOW_WIDTH));
+            std::min((float)(appState.rightBarWidth - dx),
+            width - appState.leftBarWidth - Constants::MIN_WINDOW_WIDTH));
     }
 }
 

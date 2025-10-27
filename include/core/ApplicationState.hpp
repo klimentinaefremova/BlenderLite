@@ -16,6 +16,12 @@ struct ApplicationState {
     float rightPanelScroll = 0.0f;
     float leftPanelShapesScroll = 0.0f;
     float leftPanelTexturesScroll = 0.0f;
+
+    // Updated fields for axis button selection and dragging
+    bool axisHovered[3] = {false, false, false}; // X, Y, Z button hover states
+    bool axisSelected[3] = {false, false, false}; // X, Y, Z selection states (can have multiple)
+    bool draggingAxis = false; // True when dragging selected axes
+    double dragStartX = 0.0, dragStartY = 0.0; // Drag start position
 };
 
 #endif
