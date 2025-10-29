@@ -3,6 +3,8 @@
 #include <cmath>
 #include <algorithm>
 #include <string>
+#include <sstream>
+#include <iomanip>
 
 ApplicationState appState;
 
@@ -11,6 +13,342 @@ void processInput(GLFWwindow *window);
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods);
 void cursor_position_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
+void handleTextInput(GLFWwindow* window, int key, int scancode, int action, int mods);
+void handleCharacterInput(GLFWwindow* window, unsigned int codepoint);
+
+// Enhanced 3D shape drawing functions with proper shading
+void drawCube() {
+    glBegin(GL_QUADS);
+
+    // Front face (lightest gray)
+    glColor3f(0.8f, 0.8f, 0.8f);
+    glVertex3f(-0.5f, -0.5f, 0.5f);
+    glVertex3f(0.5f, -0.5f, 0.5f);
+    glVertex3f(0.5f, 0.5f, 0.5f);
+    glVertex3f(-0.5f, 0.5f, 0.5f);
+
+    // Back face (darkest gray)
+    glColor3f(0.4f, 0.4f, 0.4f);
+    glVertex3f(-0.5f, -0.5f, -0.5f);
+    glVertex3f(-0.5f, 0.5f, -0.5f);
+    glVertex3f(0.5f, 0.5f, -0.5f);
+    glVertex3f(0.5f, -0.5f, -0.5f);
+
+    // Top face (light gray)
+    glColor3f(0.7f, 0.7f, 0.7f);
+    glVertex3f(-0.5f, 0.5f, -0.5f);
+    glVertex3f(-0.5f, 0.5f, 0.5f);
+    glVertex3f(0.5f, 0.5f, 0.5f);
+    glVertex3f(0.5f, 0.5f, -0.5f);
+
+    // Bottom face (dark gray)
+    glColor3f(0.5f, 0.5f, 0.5f);
+    glVertex3f(-0.5f, -0.5f, -0.5f);
+    glVertex3f(0.5f, -0.5f, -0.5f);
+    glVertex3f(0.5f, -0.5f, 0.5f);
+    glVertex3f(-0.5f, -0.5f, 0.5f);
+
+    // Right face (medium-light gray)
+    glColor3f(0.65f, 0.65f, 0.65f);
+    glVertex3f(0.5f, -0.5f, -0.5f);
+    glVertex3f(0.5f, 0.5f, -0.5f);
+    glVertex3f(0.5f, 0.5f, 0.5f);
+    glVertex3f(0.5f, -0.5f, 0.5f);
+
+    // Left face (medium-dark gray)
+    glColor3f(0.55f, 0.55f, 0.55f);
+    glVertex3f(-0.5f, -0.5f, -0.5f);
+    glVertex3f(-0.5f, -0.5f, 0.5f);
+    glVertex3f(-0.5f, 0.5f, 0.5f);
+    glVertex3f(-0.5f, 0.5f, -0.5f);
+
+    glEnd();
+}
+
+void drawSphere(float radius, int slices, int stacks) {
+    for (int i = 0; i <= stacks; ++i) {
+        float phi = Constants::PI * i / stacks;
+        glBegin(GL_QUAD_STRIP);
+        for (int j = 0; j <= slices; ++j) {
+            float theta = 2.0f * Constants::PI * j / slices;
+            float x = radius * sin(phi) * cos(theta);
+            float y = radius * cos(phi);
+            float z = radius * sin(phi) * sin(theta);
+
+            // Vary color based on vertical position for realistic shading
+            float shade = 0.5f + y * 0.3f;
+            glColor3f(shade, shade, shade);
+            glVertex3f(x, y, z);
+
+            x = radius * sin(phi + Constants::PI / stacks) * cos(theta);
+            y = radius * cos(phi + Constants::PI / stacks);
+            z = radius * sin(phi + Constants::PI / stacks) * sin(theta);
+
+            shade = 0.5f + y * 0.3f;
+            glColor3f(shade, shade, shade);
+            glVertex3f(x, y, z);
+        }
+        glEnd();
+    }
+}
+
+void drawCone(float base, float height, int slices) {
+    // Base (dark gray)
+    glBegin(GL_TRIANGLE_FAN);
+    glColor3f(0.4f, 0.4f, 0.4f);
+    glVertex3f(0.0f, -height/2, 0.0f);
+    for (int i = 0; i <= slices; ++i) {
+        float theta = 2.0f * Constants::PI * i / slices;
+        float x = base * cos(theta);
+        float z = base * sin(theta);
+        glVertex3f(x, -height/2, z);
+    }
+    glEnd();
+
+    // Side with gradient shading
+    glBegin(GL_TRIANGLE_FAN);
+    glVertex3f(0.0f, height/2, 0.0f);
+    for (int i = 0; i <= slices; ++i) {
+        float theta = 2.0f * Constants::PI * i / slices;
+        float x = base * cos(theta);
+        float z = base * sin(theta);
+
+        // Vary color based on angle for 3D effect
+        float shade = 0.6f - fabs(sin(theta)) * 0.2f;
+        glColor3f(shade, shade, shade);
+        glVertex3f(x, -height/2, z);
+    }
+    glEnd();
+}
+
+void drawCylinder(float radius, float height, int slices) {
+    // Top (light gray)
+    glBegin(GL_TRIANGLE_FAN);
+    glColor3f(0.8f, 0.8f, 0.8f);
+    glVertex3f(0.0f, height/2, 0.0f);
+    for (int i = 0; i <= slices; ++i) {
+        float theta = 2.0f * Constants::PI * i / slices;
+        float x = radius * cos(theta);
+        float z = radius * sin(theta);
+        glVertex3f(x, height/2, z);
+    }
+    glEnd();
+
+    // Bottom (dark gray)
+    glBegin(GL_TRIANGLE_FAN);
+    glColor3f(0.4f, 0.4f, 0.4f);
+    glVertex3f(0.0f, -height/2, 0.0f);
+    for (int i = 0; i <= slices; ++i) {
+        float theta = 2.0f * Constants::PI * i / slices;
+        float x = radius * cos(theta);
+        float z = radius * sin(theta);
+        glVertex3f(x, -height/2, z);
+    }
+    glEnd();
+
+    // Side with consistent medium gray
+    glBegin(GL_QUAD_STRIP);
+    glColor3f(0.6f, 0.6f, 0.6f);
+    for (int i = 0; i <= slices; ++i) {
+        float theta = 2.0f * Constants::PI * i / slices;
+        float x = radius * cos(theta);
+        float z = radius * sin(theta);
+        glVertex3f(x, height/2, z);
+        glVertex3f(x, -height/2, z);
+    }
+    glEnd();
+}
+
+void drawTorus(float majorRadius, float minorRadius, int majorSlices, int minorSlices) {
+    for (int i = 0; i < majorSlices; ++i) {
+        glBegin(GL_QUAD_STRIP);
+        for (int j = 0; j <= minorSlices; ++j) {
+            for (int k = 0; k <= 1; ++k) {
+                float phi = 2.0f * Constants::PI * (i + k) / majorSlices;
+                float theta = 2.0f * Constants::PI * j / minorSlices;
+
+                float x = (majorRadius + minorRadius * cos(theta)) * cos(phi);
+                float y = minorRadius * sin(theta);
+                float z = (majorRadius + minorRadius * cos(theta)) * sin(phi);
+
+                // Vary color based on minor circle position
+                float shade = 0.5f + cos(theta) * 0.3f;
+                glColor3f(shade, shade, shade);
+                glVertex3f(x, y, z);
+            }
+        }
+        glEnd();
+    }
+}
+
+void drawPyramid(float base, float height) {
+    // Base (dark gray)
+    glBegin(GL_QUADS);
+    glColor3f(0.4f, 0.4f, 0.4f);
+    glVertex3f(-base/2, -height/2, -base/2);
+    glVertex3f(base/2, -height/2, -base/2);
+    glVertex3f(base/2, -height/2, base/2);
+    glVertex3f(-base/2, -height/2, base/2);
+    glEnd();
+
+    // Front face (medium-light gray)
+    glBegin(GL_TRIANGLES);
+    glColor3f(0.7f, 0.7f, 0.7f);
+    glVertex3f(-base/2, -height/2, base/2);
+    glVertex3f(base/2, -height/2, base/2);
+    glVertex3f(0.0f, height/2, 0.0f);
+    glEnd();
+
+    // Right face (light gray)
+    glBegin(GL_TRIANGLES);
+    glColor3f(0.8f, 0.8f, 0.8f);
+    glVertex3f(base/2, -height/2, base/2);
+    glVertex3f(base/2, -height/2, -base/2);
+    glVertex3f(0.0f, height/2, 0.0f);
+    glEnd();
+
+    // Back face (medium-dark gray)
+    glBegin(GL_TRIANGLES);
+    glColor3f(0.5f, 0.5f, 0.5f);
+    glVertex3f(base/2, -height/2, -base/2);
+    glVertex3f(-base/2, -height/2, -base/2);
+    glVertex3f(0.0f, height/2, 0.0f);
+    glEnd();
+
+    // Left face (medium gray)
+    glBegin(GL_TRIANGLES);
+    glColor3f(0.6f, 0.6f, 0.6f);
+    glVertex3f(-base/2, -height/2, -base/2);
+    glVertex3f(-base/2, -height/2, base/2);
+    glVertex3f(0.0f, height/2, 0.0f);
+    glEnd();
+}
+
+void drawCurrentShape(ApplicationState& appState) {
+    if (appState.currentShape == ShapeType::NONE) {
+        return;
+    }
+
+    // Enable depth testing for 3D
+    glEnable(GL_DEPTH_TEST);
+
+    // Set up projection matrix (replacement for gluPerspective)
+    glMatrixMode(GL_PROJECTION);
+    glPushMatrix();
+    glLoadIdentity();
+
+    // Manual perspective projection matrix
+    float aspect = 1.0f;
+    float fov = 45.0f * Constants::PI / 180.0f;
+    float close = 0.1f;
+    float faar = 100.0f;
+
+    float f = 1.0f / tan(fov / 2.0f);
+    float range = close - faar;
+
+    float projection[16] = {
+        f / aspect, 0, 0, 0,
+        0, f, 0, 0,
+        0, 0, (faar + close) / range, -1,
+        0, 0, (2 * faar * close) / range, 0
+    };
+
+    glMultMatrixf(projection);
+
+    // Set up modelview matrix
+    glMatrixMode(GL_MODELVIEW);
+    glPushMatrix();
+    glLoadIdentity();
+
+    // Manual camera setup (replacement for gluLookAt)
+    float eyeX = 0.0f, eyeY = 0.0f, eyeZ = 3.0f;
+    float centerX = 0.0f, centerY = 0.0f, centerZ = 0.0f;
+    float upX = 0.0f, upY = 1.0f, upZ = 0.0f;
+
+    float forward[3] = {
+        centerX - eyeX,
+        centerY - eyeY,
+        centerZ - eyeZ
+    };
+
+    // Normalize forward vector
+    float length = sqrt(forward[0]*forward[0] + forward[1]*forward[1] + forward[2]*forward[2]);
+    forward[0] /= length;
+    forward[1] /= length;
+    forward[2] /= length;
+
+    // Right = forward x up
+    float right[3] = {
+        forward[1] * upZ - forward[2] * upY,
+        forward[2] * upX - forward[0] * upZ,
+        forward[0] * upY - forward[1] * upX
+    };
+
+    // Normalize right vector
+    length = sqrt(right[0]*right[0] + right[1]*right[1] + right[2]*right[2]);
+    right[0] /= length;
+    right[1] /= length;
+    right[2] /= length;
+
+    // Up = right x forward
+    float actualUp[3] = {
+        right[1] * forward[2] - right[2] * forward[1],
+        right[2] * forward[0] - right[0] * forward[2],
+        right[0] * forward[1] - right[1] * forward[0]
+    };
+
+    float view[16] = {
+        right[0], actualUp[0], -forward[0], 0,
+        right[1], actualUp[1], -forward[1], 0,
+        right[2], actualUp[2], -forward[2], 0,
+        -(right[0]*eyeX + right[1]*eyeY + right[2]*eyeZ),
+        -(actualUp[0]*eyeX + actualUp[1]*eyeY + actualUp[2]*eyeZ),
+        forward[0]*eyeX + forward[1]*eyeY + forward[2]*eyeZ,
+        1
+    };
+
+    glMultMatrixf(view);
+
+    // Apply transformations from appState
+    glTranslatef(appState.translate[0], appState.translate[1], appState.translate[2]);
+    glScalef(appState.scale[0], appState.scale[1], appState.scale[2]);
+    glRotatef(appState.rotate[0], 1.0f, 0.0f, 0.0f);
+    glRotatef(appState.rotate[1], 0.0f, 1.0f, 0.0f);
+    glRotatef(appState.rotate[2], 0.0f, 0.0f, 1.0f);
+
+    // Draw the selected shape
+    switch (appState.currentShape) {
+        case ShapeType::CUBE:
+            drawCube();
+            break;
+        case ShapeType::SPHERE:
+            drawSphere(0.5f, 20, 20);
+            break;
+        case ShapeType::CONE:
+            drawCone(0.5f, 1.0f, 20);
+            break;
+        case ShapeType::CYLINDER:
+            drawCylinder(0.5f, 1.0f, 20);
+            break;
+        case ShapeType::TORUS:
+            drawTorus(0.5f, 0.2f, 20, 10);
+            break;
+        case ShapeType::PYRAMID:
+            drawPyramid(1.0f, 1.0f);
+            break;
+        default:
+            break;
+    }
+
+    // Restore matrices
+    glPopMatrix();
+    glMatrixMode(GL_PROJECTION);
+    glPopMatrix();
+    glMatrixMode(GL_MODELVIEW);
+
+    // Disable depth testing for 2D UI
+    glDisable(GL_DEPTH_TEST);
+}
 
 void draw3DAxes(float canvasX1, float canvasY1, float canvasX2, float canvasY2, int width, int height) {
     // Save current matrix state
@@ -132,12 +470,12 @@ void drawAxisButtons(float leftEdgeNDC, float canvasY1, float canvasY2, int widt
     glLoadIdentity();
 
     // Button size and spacing
-    float buttonSize = 0.035f; // Changed back to 0.035 as requested
-    float buttonGap = 0.002f;  // Scaled gap
-    float marginY = 0.03f;     // Bottom margin
+    float buttonSize = 0.035f;
+    float buttonGap = 0.002f;
+    float marginY = 0.03f;
 
     // Position buttons attached to the left sidebar's right edge
-    float startX = leftEdgeNDC; // Directly on the edge of left sidebar
+    float startX = leftEdgeNDC;
     float startY = canvasY1 + marginY;
 
     // X button (Red)
@@ -149,11 +487,11 @@ void drawAxisButtons(float leftEdgeNDC, float canvasY1, float canvasY2, int widt
     bool hoverX = PrimitiveRenderer::isInsideNDC(appState.mouseX, appState.mouseY, width, height, xBtnX1, xBtnY1, xBtnX2, xBtnY2);
 
     if (appState.axisSelected[0]) {
-        PrimitiveRenderer::drawRect(xBtnX1, xBtnY1, xBtnX2, xBtnY2, 1.0f, 0.5f, 0.5f); // Light red when selected
+        PrimitiveRenderer::drawRect(xBtnX1, xBtnY1, xBtnX2, xBtnY2, 1.0f, 0.5f, 0.5f);
     } else if (hoverX) {
-        PrimitiveRenderer::drawRect(xBtnX1, xBtnY1, xBtnX2, xBtnY2, 1.0f, 0.8f, 0.8f); // Very light red when hovered
+        PrimitiveRenderer::drawRect(xBtnX1, xBtnY1, xBtnX2, xBtnY2, 1.0f, 0.8f, 0.8f);
     } else {
-        PrimitiveRenderer::drawRect(xBtnX1, xBtnY1, xBtnX2, xBtnY2, 1.0f, 0.0f, 0.0f); // Normal red
+        PrimitiveRenderer::drawRect(xBtnX1, xBtnY1, xBtnX2, xBtnY2, 1.0f, 0.0f, 0.0f);
     }
     PrimitiveRenderer::drawOutlineRect(xBtnX1, xBtnY1, xBtnX2, xBtnY2, 0.0f, 0.0f, 0.0f, 1.5f);
 
@@ -169,11 +507,11 @@ void drawAxisButtons(float leftEdgeNDC, float canvasY1, float canvasY2, int widt
     bool hoverY = PrimitiveRenderer::isInsideNDC(appState.mouseX, appState.mouseY, width, height, yBtnX1, yBtnY1, yBtnX2, yBtnY2);
 
     if (appState.axisSelected[1]) {
-        PrimitiveRenderer::drawRect(yBtnX1, yBtnY1, yBtnX2, yBtnY2, 0.5f, 1.0f, 0.5f); // Light green when selected
+        PrimitiveRenderer::drawRect(yBtnX1, yBtnY1, yBtnX2, yBtnY2, 0.5f, 1.0f, 0.5f);
     } else if (hoverY) {
-        PrimitiveRenderer::drawRect(yBtnX1, yBtnY1, yBtnX2, yBtnY2, 0.8f, 1.0f, 0.8f); // Very light green when hovered
+        PrimitiveRenderer::drawRect(yBtnX1, yBtnY1, yBtnX2, yBtnY2, 0.8f, 1.0f, 0.8f);
     } else {
-        PrimitiveRenderer::drawRect(yBtnX1, yBtnY1, yBtnX2, yBtnY2, 0.0f, 1.0f, 0.0f); // Normal green
+        PrimitiveRenderer::drawRect(yBtnX1, yBtnY1, yBtnX2, yBtnY2, 0.0f, 1.0f, 0.0f);
     }
     PrimitiveRenderer::drawOutlineRect(yBtnX1, yBtnY1, yBtnX2, yBtnY2, 0.0f, 0.0f, 0.0f, 1.5f);
 
@@ -189,11 +527,11 @@ void drawAxisButtons(float leftEdgeNDC, float canvasY1, float canvasY2, int widt
     bool hoverZ = PrimitiveRenderer::isInsideNDC(appState.mouseX, appState.mouseY, width, height, zBtnX1, zBtnY1, zBtnX2, zBtnY2);
 
     if (appState.axisSelected[2]) {
-        PrimitiveRenderer::drawRect(zBtnX1, zBtnY1, zBtnX2, zBtnY2, 0.5f, 0.5f, 1.0f); // Light blue when selected
+        PrimitiveRenderer::drawRect(zBtnX1, zBtnY1, zBtnX2, zBtnY2, 0.5f, 0.5f, 1.0f);
     } else if (hoverZ) {
-        PrimitiveRenderer::drawRect(zBtnX1, zBtnY1, zBtnX2, zBtnY2, 0.8f, 0.8f, 1.0f); // Very light blue when hovered
+        PrimitiveRenderer::drawRect(zBtnX1, zBtnY1, zBtnX2, zBtnY2, 0.8f, 0.8f, 1.0f);
     } else {
-        PrimitiveRenderer::drawRect(zBtnX1, zBtnY1, zBtnX2, zBtnY2, 0.0f, 0.0f, 1.0f); // Normal blue
+        PrimitiveRenderer::drawRect(zBtnX1, zBtnY1, zBtnX2, zBtnY2, 0.0f, 0.0f, 1.0f);
     }
     PrimitiveRenderer::drawOutlineRect(zBtnX1, zBtnY1, zBtnX2, zBtnY2, 0.0f, 0.0f, 0.0f, 1.5f);
 
@@ -212,8 +550,86 @@ void drawAxisButtons(float leftEdgeNDC, float canvasY1, float canvasY2, int widt
     glMatrixMode(GL_MODELVIEW);
 }
 
+void checkShapeButtonClicks(double xpos, double ypos, int width, int height, ApplicationState& appState) {
+    // Calculate the shapes panel position
+    float leftPanelWidth = PrimitiveRenderer::pxToNDCx((int)(Constants::LEFT_BAR_WIDTH * 0.85f), width);
+    float leftPanelHeight = PrimitiveRenderer::pxToNDCy(310, height);
+    float leftPanelGap = PrimitiveRenderer::pxToNDCy(20, height);
+    float leftVerticalOffset = PrimitiveRenderer::pxToNDCy(5, height);
 
+    float texturesPanelY = -1.0f + appState.leftPanelTexturesScroll + leftVerticalOffset;
+    float shapesPanelY = texturesPanelY + leftPanelHeight + leftPanelGap + appState.leftPanelShapesScroll;
 
+    float panelX1 = -1.0f + PrimitiveRenderer::pxToNDCx(5, width);
+    float buttonWidth = (leftPanelWidth - PrimitiveRenderer::pxToNDCx(40, width)) / 2.0f;
+    float buttonHeight = PrimitiveRenderer::pxToNDCy(75, height);
+    float buttonGap = PrimitiveRenderer::pxToNDCx(8, width);
+    float rowGap = PrimitiveRenderer::pxToNDCy(10, height);
+
+    float contentHeight = (buttonHeight * 3) + (rowGap * 2);
+    float maxScroll = std::max(0.0f, contentHeight - leftPanelHeight);
+    float scrollOffset = std::max(0.0f, std::min(maxScroll, -appState.leftPanelShapesScroll));
+
+    float row1Y = shapesPanelY + leftPanelHeight - PrimitiveRenderer::pxToNDCy(50, height) + scrollOffset;
+
+    // Check Cube button
+    float cubeX1 = panelX1 + PrimitiveRenderer::pxToNDCx(10, width);
+    float cubeX2 = cubeX1 + buttonWidth;
+    if (PrimitiveRenderer::isInsideNDC(xpos, ypos, width, height, cubeX1, row1Y - buttonHeight, cubeX2, row1Y)) {
+        appState.currentShape = ShapeType::CUBE;
+        std::cout << "Cube generated!\n";
+        return;
+    }
+
+    // Check Sphere button
+    float sphereX1 = cubeX2 + buttonGap;
+    float sphereX2 = sphereX1 + buttonWidth;
+    if (PrimitiveRenderer::isInsideNDC(xpos, ypos, width, height, sphereX1, row1Y - buttonHeight, sphereX2, row1Y)) {
+        appState.currentShape = ShapeType::SPHERE;
+        std::cout << "Sphere generated!\n";
+        return;
+    }
+
+    float row2Y = row1Y - buttonHeight - rowGap;
+
+    // Check Cone button
+    float coneX1 = panelX1 + PrimitiveRenderer::pxToNDCx(10, width);
+    float coneX2 = coneX1 + buttonWidth;
+    if (PrimitiveRenderer::isInsideNDC(xpos, ypos, width, height, coneX1, row2Y - buttonHeight, coneX2, row2Y)) {
+        appState.currentShape = ShapeType::CONE;
+        std::cout << "Cone generated!\n";
+        return;
+    }
+
+    // Check Cylinder button
+    float cylinderX1 = coneX2 + buttonGap;
+    float cylinderX2 = cylinderX1 + buttonWidth;
+    if (PrimitiveRenderer::isInsideNDC(xpos, ypos, width, height, cylinderX1, row2Y - buttonHeight, cylinderX2, row2Y)) {
+        appState.currentShape = ShapeType::CYLINDER;
+        std::cout << "Cylinder generated!\n";
+        return;
+    }
+
+    float row3Y = row2Y - buttonHeight - rowGap;
+
+    // Check Torus button
+    float torusX1 = panelX1 + PrimitiveRenderer::pxToNDCx(10, width);
+    float torusX2 = torusX1 + buttonWidth;
+    if (PrimitiveRenderer::isInsideNDC(xpos, ypos, width, height, torusX1, row3Y - buttonHeight, torusX2, row3Y)) {
+        appState.currentShape = ShapeType::TORUS;
+        std::cout << "Torus generated!\n";
+        return;
+    }
+
+    // Check Pyramid button
+    float pyramidX1 = torusX2 + buttonGap;
+    float pyramidX2 = pyramidX1 + buttonWidth;
+    if (PrimitiveRenderer::isInsideNDC(xpos, ypos, width, height, pyramidX1, row3Y - buttonHeight, pyramidX2, row3Y)) {
+        appState.currentShape = ShapeType::PYRAMID;
+        std::cout << "Pyramid generated!\n";
+        return;
+    }
+}
 
 void drawTopBarUI(int width, int height) {
     float marginPx = 10.0f;
@@ -399,6 +815,82 @@ void drawTopBarUI(int width, int height) {
     PrimitiveRenderer::drawText("Shades", shadesX1 + 0.01f, (shadesY1 + shadesY2)*0.5f - 0.01f, GLUT_BITMAP_HELVETICA_12);
 }
 
+// Text input handling functions
+void handleTextInput(GLFWwindow* window, int key, int scancode, int action, int mods) {
+    if (!appState.activeInputField.active) return;
+
+    if (action == GLFW_PRESS) {
+        // Handle backspace
+        if (key == GLFW_KEY_BACKSPACE) {
+            if (!appState.activeInputField.text.empty()) {
+                appState.activeInputField.text.pop_back();
+            }
+        }
+        // Handle enter to apply the value
+        else if (key == GLFW_KEY_ENTER || key == GLFW_KEY_KP_ENTER) {
+            if (!appState.activeInputField.text.empty()) {
+                try {
+                    float newValue = std::stof(appState.activeInputField.text);
+
+                    // Apply the new value to the appropriate vector
+                    if (appState.activeInputField.panelType == 0) { // Rotation
+                        appState.rotate[appState.activeInputField.axis] = newValue;
+                        std::cout << "Rotation " << (appState.activeInputField.axis == 0 ? "X" :
+                                appState.activeInputField.axis == 1 ? "Y" : "Z")
+                                << " set to: " << newValue << std::endl;
+                    }
+                    else if (appState.activeInputField.panelType == 1) { // Scaling
+                        appState.scale[appState.activeInputField.axis] = newValue;
+                        std::cout << "Scaling " << (appState.activeInputField.axis == 0 ? "X" :
+                                appState.activeInputField.axis == 1 ? "Y" : "Z")
+                                << " set to: " << newValue << std::endl;
+                    }
+                    else if (appState.activeInputField.panelType == 2) { // Translation
+                        appState.translate[appState.activeInputField.axis] = newValue;
+                        // Apply limits after setting translation
+                        applyTranslationLimits(appState.translate);
+                        std::cout << "Translation " << (appState.activeInputField.axis == 0 ? "X" :
+                                appState.activeInputField.axis == 1 ? "Y" : "Z")
+                                << " set to: " << newValue << std::endl;
+                    }
+                }
+                catch (const std::exception& e) {
+                    std::cout << "Invalid input: " << e.what() << std::endl;
+                }
+            }
+            // Clear the input field
+            appState.activeInputField.active = false;
+            appState.activeInputField.text.clear();
+        }
+        // Handle escape to cancel input
+        else if (key == GLFW_KEY_ESCAPE) {
+            appState.activeInputField.active = false;
+            appState.activeInputField.text.clear();
+            std::cout << "Input cancelled\n";
+        }
+    }
+}
+
+void handleCharacterInput(GLFWwindow* window, unsigned int codepoint) {
+    if (!appState.activeInputField.active) return;
+
+    // Only allow digits, decimal point, and minus sign
+    if ((codepoint >= '0' && codepoint <= '9') || codepoint == '.' || codepoint == '-') {
+        // Prevent multiple decimal points
+        if (codepoint == '.' && appState.activeInputField.text.find('.') != std::string::npos) {
+            return;
+        }
+        // Prevent multiple minus signs and ensure minus is only at the beginning
+        if (codepoint == '-') {
+            if (!appState.activeInputField.text.empty()) {
+                return;
+            }
+        }
+
+        appState.activeInputField.text += static_cast<char>(codepoint);
+    }
+}
+
 int main() {
     if (!glfwInit()) return -1;
 
@@ -423,6 +915,10 @@ int main() {
     glfwSetCursorPosCallback(window, cursor_position_callback);
     glfwSetScrollCallback(window, scroll_callback);
 
+    // Add these new callbacks for text input
+    glfwSetKeyCallback(window, handleTextInput);
+    glfwSetCharCallback(window, handleCharacterInput);
+
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
         std::cout << "Failed to initialize GLAD\n";
         return -1;
@@ -435,60 +931,60 @@ int main() {
 
     while (!glfwWindowShouldClose(window)) {
         processInput(window);
-        glClear(GL_COLOR_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         int width, height;
         glfwGetWindowSize(window, &width, &height);
 
-        if (width < Constants::MIN_WINDOW_WIDTH + appState.leftBarWidth + appState.rightBarWidth) {
-            width = Constants::MIN_WINDOW_WIDTH + appState.leftBarWidth + appState.rightBarWidth;
+        // Use fixed sidebar widths from Constants
+        if (width < Constants::MIN_WINDOW_WIDTH + Constants::LEFT_BAR_WIDTH + Constants::RIGHT_BAR_WIDTH) {
+            width = Constants::MIN_WINDOW_WIDTH + Constants::LEFT_BAR_WIDTH + Constants::RIGHT_BAR_WIDTH;
         }
 
-        float leftEdgeNDC = -1.0f + (2.0f * appState.leftBarWidth / width);
-        float rightEdgeNDC = 1.0f - (2.0f * appState.rightBarWidth / width);
+        // Calculate edges using fixed widths
+        float leftEdgeNDC = -1.0f + (2.0f * Constants::LEFT_BAR_WIDTH / width);
+        float rightEdgeNDC = 1.0f - (2.0f * Constants::RIGHT_BAR_WIDTH / width);
         float topEdgeNDC = 1.0f - (2.0f * Constants::TOP_BAR_HEIGHT / height);
-        float handleNDC_W = 2.0f * Constants::HANDLE_PX / width;
 
+        // Draw static sidebars (no handles)
         PrimitiveRenderer::drawRect(-1.0f, -1.0f, leftEdgeNDC, topEdgeNDC, 0.5f, 0.5f, 0.5f);
         PrimitiveRenderer::drawRect(rightEdgeNDC, -1.0f, 1.0f, topEdgeNDC, 0.5f, 0.5f, 0.5f);
         PrimitiveRenderer::drawRect(-1.0f, topEdgeNDC, 1.0f, 1.0f, 0.45f, 0.45f, 0.45f);
-        PrimitiveRenderer::drawRect(leftEdgeNDC - handleNDC_W, -1.0f, leftEdgeNDC, topEdgeNDC, 0.7f, 0.7f, 0.7f);
-        PrimitiveRenderer::drawRect(rightEdgeNDC, -1.0f, rightEdgeNDC + handleNDC_W, topEdgeNDC, 0.7f, 0.7f, 0.7f);
 
         drawTopBarUI(width, height);
 
-        float leftPanelWidth = PrimitiveRenderer::pxToNDCx((int)(appState.leftBarWidth * 0.85f), width);
+        float leftPanelWidth = PrimitiveRenderer::pxToNDCx((int)(Constants::LEFT_BAR_WIDTH * 0.85f), width);
         float leftPanelHeight = PrimitiveRenderer::pxToNDCy(310, height);
         float leftPanelGap = PrimitiveRenderer::pxToNDCy(20, height);
         float leftVerticalOffset = PrimitiveRenderer::pxToNDCy(5, height);
 
         float texturesPanelY = -1.0f + appState.leftPanelTexturesScroll + leftVerticalOffset;
         Panels::drawTexturesPanel(-1.0f + PrimitiveRenderer::pxToNDCx(5, width), texturesPanelY,
-            leftPanelWidth, leftPanelHeight, appState, width, height);
+                                  leftPanelWidth, leftPanelHeight, appState, width, height);
 
         float shapesPanelY = texturesPanelY + leftPanelHeight + leftPanelGap + appState.leftPanelShapesScroll;
         Panels::drawShapesPanel(-1.0f + PrimitiveRenderer::pxToNDCx(5, width), shapesPanelY,
-            leftPanelWidth, leftPanelHeight, appState, width, height);
+                                leftPanelWidth, leftPanelHeight, appState, width, height);
 
-        float panelWidth = PrimitiveRenderer::pxToNDCx((int)(appState.rightBarWidth * 0.85f), width);
+        float panelWidth = PrimitiveRenderer::pxToNDCx((int)(Constants::RIGHT_BAR_WIDTH * 0.85f), width);
         float panelHeight = PrimitiveRenderer::pxToNDCy(180, height);
         float panelGap = PrimitiveRenderer::pxToNDCy(15, height);
         float totalPanelsHeight = (panelHeight * 3) + (panelGap * 2);
         float rightVerticalOffset = PrimitiveRenderer::pxToNDCy(50, height);
 
         Panels::drawTransformPanel(rightEdgeNDC + PrimitiveRenderer::pxToNDCx(5, width), -1.0f + appState.rightPanelScroll + rightVerticalOffset,
-            panelWidth, panelHeight,
-            "Rotation", appState.rotate, appState, width, height);
+                                  panelWidth, panelHeight,
+                                  "Rotation", appState.rotate, appState, width, height);
 
         float scalePanelY = -1.0f + panelHeight + panelGap + appState.rightPanelScroll + rightVerticalOffset;
         Panels::drawTransformPanel(rightEdgeNDC + PrimitiveRenderer::pxToNDCx(5, width), scalePanelY,
-            panelWidth, panelHeight,
-            "Scaling", appState.scale, appState, width, height);
+                                  panelWidth, panelHeight,
+                                  "Scaling", appState.scale, appState, width, height);
 
         float translatePanelY = -1.0f + (panelHeight * 2) + (panelGap * 2) + appState.rightPanelScroll + rightVerticalOffset;
         Panels::drawTransformPanel(rightEdgeNDC + PrimitiveRenderer::pxToNDCx(5, width), translatePanelY,
-            panelWidth, panelHeight,
-            "Translate", appState.translate, appState, width, height);
+                                  panelWidth, panelHeight,
+                                  "Translate", appState.translate, appState, width, height);
 
         float scrollBarWidth = PrimitiveRenderer::pxToNDCx(8, width);
         float scrollBarX = 1.0f - scrollBarWidth;
@@ -514,6 +1010,9 @@ int main() {
 
         // Draw 3D axes in the center of the canvas
         draw3DAxes(canvasX1, canvasY1, canvasX2, canvasY2, width, height);
+
+        // Draw the current selected shape
+        drawCurrentShape(appState);
 
         // Draw axis buttons attached to left sidebar's right edge
         drawAxisButtons(leftEdgeNDC, canvasY1, canvasY2, width, height);
@@ -542,10 +1041,42 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
     int width, height;
     glfwGetWindowSize(window, &width, &height);
 
-    float leftEdge = appState.leftBarWidth;
-    float rightEdge = width - appState.rightBarWidth;
-
     if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
+        appState.mouseClicked = true; // Set mouse clicked flag
+
+        // Store the original values before deactivating (for cancellation)
+        static float originalValues[3] = {0.0f, 0.0f, 0.0f};
+        static bool hasOriginalValues = false;
+
+        // If we're currently editing and clicking outside, restore original values
+        if (appState.activeInputField.active) {
+            // Restore original values if text is empty (user didn't enter anything)
+            if (appState.activeInputField.text.empty() && hasOriginalValues) {
+                if (appState.activeInputField.panelType == 0) { // Rotation
+                    appState.rotate[0] = originalValues[0];
+                    appState.rotate[1] = originalValues[1];
+                    appState.rotate[2] = originalValues[2];
+                } else if (appState.activeInputField.panelType == 1) { // Scaling
+                    appState.scale[0] = originalValues[0];
+                    appState.scale[1] = originalValues[1];
+                    appState.scale[2] = originalValues[2];
+                } else if (appState.activeInputField.panelType == 2) { // Translation
+                    appState.translate[0] = originalValues[0];
+                    appState.translate[1] = originalValues[1];
+                    appState.translate[2] = originalValues[2];
+                }
+                std::cout << "Input cancelled - restored original values\n";
+            }
+
+            appState.activeInputField.active = false;
+            appState.activeInputField.text.clear();
+            hasOriginalValues = false;
+            std::cout << "Input field deactivated\n";
+        }
+
+        // Check shape button clicks first
+        checkShapeButtonClicks(xpos, ypos, width, height, appState);
+
         // Toggle axis selection when clicking axis buttons
         if (appState.axisHovered[0]) {
             appState.axisSelected[0] = !appState.axisSelected[0];
@@ -571,19 +1102,12 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 
         // Print current selection state
         std::cout << "Current selection - X:" << appState.axisSelected[0]
-                  << " Y:" << appState.axisSelected[1]
-                  << " Z:" << appState.axisSelected[2] << "\n";
+                << " Y:" << appState.axisSelected[1]
+                << " Z:" << appState.axisSelected[2] << "\n";
 
-        // Existing resizing logic
-        if (xpos >= leftEdge - Constants::HANDLE_PX && xpos <= leftEdge)
-            appState.resizingLeft = true;
-        else if (xpos >= rightEdge && xpos <= rightEdge + Constants::HANDLE_PX)
-            appState.resizingRight = true;
-        appState.lastX = xpos;
-        appState.lastY = ypos;
     } else if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE) {
-        appState.resizingLeft = appState.resizingRight = false;
         appState.draggingAxis = false;
+        appState.mouseClicked = false; // Reset mouse clicked flag
         std::cout << "Stopped dragging\n";
     }
     (void)mods;
@@ -609,32 +1133,16 @@ void cursor_position_callback(GLFWwindow* window, double xpos, double ypos) {
             appState.translate[2] += (dx + dy) * 0.005f; // Combine X and Y for Z movement
         }
 
+        // Apply translation limits after updating
+        applyTranslationLimits(appState.translate);
+
         appState.dragStartX = xpos;
         appState.dragStartY = ypos;
 
         std::cout << "Translation - X:" << appState.translate[0]
                   << " Y:" << appState.translate[1]
                   << " Z:" << appState.translate[2] << "\n";
-        return; // Skip resizing logic when dragging axes
-    }
-
-    if (!appState.resizingLeft && !appState.resizingRight) return;
-
-    int width, height;
-    glfwGetWindowSize(window, &width, &height);
-    double dx = xpos - appState.lastX;
-    appState.lastX = xpos;
-    appState.lastY = ypos;
-
-    if (appState.resizingLeft) {
-        appState.leftBarWidth = std::max(Constants::MIN_LEFT_BAR_WIDTH,
-            std::min((float)(appState.leftBarWidth + dx),
-            width - appState.rightBarWidth - Constants::MIN_WINDOW_WIDTH));
-    }
-    else if (appState.resizingRight) {
-        appState.rightBarWidth = std::max(Constants::MIN_RIGHT_BAR_WIDTH,
-            std::min((float)(appState.rightBarWidth - dx),
-            width - appState.leftBarWidth - Constants::MIN_WINDOW_WIDTH));
+        return; // Skip other logic when dragging axes
     }
 }
 
@@ -648,7 +1156,7 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
     double mx, my;
     glfwGetCursorPos(window, &mx, &my);
 
-    if (mx < appState.leftBarWidth) {
+    if (mx < Constants::LEFT_BAR_WIDTH) {
         if (my < height / 2) {
             appState.leftPanelShapesScroll += yoffset * 20.0f;
             float maxShapesScroll = 400.0f;

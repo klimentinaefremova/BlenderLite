@@ -1,14 +1,16 @@
 #include "../include/ui/Panels.hpp"
 #include "../include/rendering/PrimitiveRenderer.hpp"
+#include "../include/core/TranslationLimits.hpp"
 #include <iostream>
 #include <algorithm>
 #include <cstdio>
 #include <cmath>
+#include <sstream>
+#include <iomanip>
 
 void Panels::drawTransformPanel(float panelX1, float panelY1, float panelWidth, float panelHeight,
                                 const std::string& title, float values[3],
                                 ApplicationState& state, int width, int height) {
-    // ... (keep the existing drawTransformPanel code unchanged)
     PrimitiveRenderer::drawRect(panelX1, panelY1, panelX1 + panelWidth, panelY1 + panelHeight, 0.4f, 0.4f, 0.4f);
     PrimitiveRenderer::drawOutlineRect(panelX1, panelY1, panelX1 + panelWidth, panelY1 + panelHeight, 0.0f, 0.0f, 0.0f, 2.0f);
 
@@ -20,312 +22,193 @@ void Panels::drawTransformPanel(float panelX1, float panelY1, float panelWidth, 
     float inputBoxWidth = panelWidth - PrimitiveRenderer::pxToNDCx(30, width);
     float inputY = panelY1 + panelHeight - PrimitiveRenderer::pxToNDCy(70, height);
 
-    PrimitiveRenderer::drawRect(panelX1 + PrimitiveRenderer::pxToNDCx(15, width), inputY - inputBoxHeight,
-                              panelX1 + PrimitiveRenderer::pxToNDCx(15, width) + inputBoxWidth, inputY, 0.9f, 0.9f, 0.9f);
-    PrimitiveRenderer::drawOutlineRect(panelX1 + PrimitiveRenderer::pxToNDCx(15, width), inputY - inputBoxHeight,
-                                     panelX1 + PrimitiveRenderer::pxToNDCx(15, width) + inputBoxWidth, inputY, 0.0f, 0.0f, 0.0f, 1.0f);
+    // Determine panel type for input field identification
+    int panelType = -1;
+    if (title == "Rotation") panelType = 0;
+    else if (title == "Scaling") panelType = 1;
+    else if (title == "Translate") panelType = 2;
+
+    // X input box
+    float xBoxX1 = panelX1 + PrimitiveRenderer::pxToNDCx(15, width);
+    float xBoxX2 = xBoxX1 + inputBoxWidth;
+    float xBoxY1 = inputY - inputBoxHeight;
+    float xBoxY2 = inputY;
+
+    bool isXActive = (state.activeInputField.panelType == panelType && state.activeInputField.axis == 0);
+    bool hoverX = PrimitiveRenderer::isInsideNDC(state.mouseX, state.mouseY, width, height, xBoxX1, xBoxY1, xBoxX2, xBoxY2);
+
+    // Draw input box with different color if active or hovered
+    if (isXActive) {
+        PrimitiveRenderer::drawRect(xBoxX1, xBoxY1, xBoxX2, xBoxY2, 0.7f, 0.7f, 0.9f);
+    } else if (hoverX) {
+        PrimitiveRenderer::drawRect(xBoxX1, xBoxY1, xBoxX2, xBoxY2, 0.6f, 0.6f, 0.6f);
+    } else {
+        PrimitiveRenderer::drawRect(xBoxX1, xBoxY1, xBoxX2, xBoxY2, 0.9f, 0.9f, 0.9f);
+    }
+    PrimitiveRenderer::drawOutlineRect(xBoxX1, xBoxY1, xBoxX2, xBoxY2, 0.0f, 0.0f, 0.0f, 1.0f);
 
     glColor3f(0.2f, 0.2f, 0.2f);
-    char xValue[20];
-    snprintf(xValue, sizeof(xValue), "X: %7.3f", values[0]);
-    PrimitiveRenderer::drawText(xValue, panelX1 + PrimitiveRenderer::pxToNDCx(20, width), inputY - PrimitiveRenderer::pxToNDCy(15, height), GLUT_BITMAP_HELVETICA_12);
+    std::string xText;
+    if (isXActive) {
+        xText = "X: " + state.activeInputField.text;
+    } else {
+        std::ostringstream stream;
+        stream << std::fixed << std::setprecision(3) << values[0];
+        xText = "X: " + stream.str();
+    }
+    PrimitiveRenderer::drawText(xText, xBoxX1 + PrimitiveRenderer::pxToNDCx(5, width), inputY - PrimitiveRenderer::pxToNDCy(15, height), GLUT_BITMAP_HELVETICA_12);
 
+    // Y input box
     inputY -= inputBoxHeight + PrimitiveRenderer::pxToNDCy(2, height);
-    PrimitiveRenderer::drawRect(panelX1 + PrimitiveRenderer::pxToNDCx(15, width), inputY - inputBoxHeight,
-                              panelX1 + PrimitiveRenderer::pxToNDCx(15, width) + inputBoxWidth, inputY, 0.9f, 0.9f, 0.9f);
-    PrimitiveRenderer::drawOutlineRect(panelX1 + PrimitiveRenderer::pxToNDCx(15, width), inputY - inputBoxHeight,
-                                     panelX1 + PrimitiveRenderer::pxToNDCx(15, width) + inputBoxWidth, inputY, 0.0f, 0.0f, 0.0f, 1.0f);
+    float yBoxX1 = panelX1 + PrimitiveRenderer::pxToNDCx(15, width);
+    float yBoxX2 = yBoxX1 + inputBoxWidth;
+    float yBoxY1 = inputY - inputBoxHeight;
+    float yBoxY2 = inputY;
 
-    char yValue[20];
-    snprintf(yValue, sizeof(yValue), "Y: %7.3f", values[1]);
-    PrimitiveRenderer::drawText(yValue, panelX1 + PrimitiveRenderer::pxToNDCx(20, width), inputY - PrimitiveRenderer::pxToNDCy(15, height), GLUT_BITMAP_HELVETICA_12);
+    bool isYActive = (state.activeInputField.panelType == panelType && state.activeInputField.axis == 1);
+    bool hoverY = PrimitiveRenderer::isInsideNDC(state.mouseX, state.mouseY, width, height, yBoxX1, yBoxY1, yBoxX2, yBoxY2);
 
+    if (isYActive) {
+        PrimitiveRenderer::drawRect(yBoxX1, yBoxY1, yBoxX2, yBoxY2, 0.7f, 0.7f, 0.9f);
+    } else if (hoverY) {
+        PrimitiveRenderer::drawRect(yBoxX1, yBoxY1, yBoxX2, yBoxY2, 0.6f, 0.6f, 0.6f);
+    } else {
+        PrimitiveRenderer::drawRect(yBoxX1, yBoxY1, yBoxX2, yBoxY2, 0.9f, 0.9f, 0.9f);
+    }
+    PrimitiveRenderer::drawOutlineRect(yBoxX1, yBoxY1, yBoxX2, yBoxY2, 0.0f, 0.0f, 0.0f, 1.0f);
+
+    glColor3f(0.2f, 0.2f, 0.2f);
+    std::string yText;
+    if (isYActive) {
+        yText = "Y: " + state.activeInputField.text;
+    } else {
+        std::ostringstream stream;
+        stream << std::fixed << std::setprecision(3) << values[1];
+        yText = "Y: " + stream.str();
+    }
+    PrimitiveRenderer::drawText(yText, yBoxX1 + PrimitiveRenderer::pxToNDCx(5, width), inputY - PrimitiveRenderer::pxToNDCy(15, height), GLUT_BITMAP_HELVETICA_12);
+
+    // Z input box
     inputY -= inputBoxHeight + PrimitiveRenderer::pxToNDCy(2, height);
-    PrimitiveRenderer::drawRect(panelX1 + PrimitiveRenderer::pxToNDCx(15, width), inputY - inputBoxHeight,
-                              panelX1 + PrimitiveRenderer::pxToNDCx(15, width) + inputBoxWidth, inputY, 0.9f, 0.9f, 0.9f);
-    PrimitiveRenderer::drawOutlineRect(panelX1 + PrimitiveRenderer::pxToNDCx(15, width), inputY - inputBoxHeight,
-                                     panelX1 + PrimitiveRenderer::pxToNDCx(15, width) + inputBoxWidth, inputY, 0.0f, 0.0f, 0.0f, 1.0f);
+    float zBoxX1 = panelX1 + PrimitiveRenderer::pxToNDCx(15, width);
+    float zBoxX2 = zBoxX1 + inputBoxWidth;
+    float zBoxY1 = inputY - inputBoxHeight;
+    float zBoxY2 = inputY;
 
-    char zValue[20];
-    snprintf(zValue, sizeof(zValue), "Z: %7.3f", values[2]);
-    PrimitiveRenderer::drawText(zValue, panelX1 + PrimitiveRenderer::pxToNDCx(20, width), inputY - PrimitiveRenderer::pxToNDCy(15, height), GLUT_BITMAP_HELVETICA_12);
+    bool isZActive = (state.activeInputField.panelType == panelType && state.activeInputField.axis == 2);
+    bool hoverZ = PrimitiveRenderer::isInsideNDC(state.mouseX, state.mouseY, width, height, zBoxX1, zBoxY1, zBoxX2, zBoxY2);
+
+    if (isZActive) {
+        PrimitiveRenderer::drawRect(zBoxX1, zBoxY1, zBoxX2, zBoxY2, 0.7f, 0.7f, 0.9f);
+    } else if (hoverZ) {
+        PrimitiveRenderer::drawRect(zBoxX1, zBoxY1, zBoxX2, zBoxY2, 0.6f, 0.6f, 0.6f);
+    } else {
+        PrimitiveRenderer::drawRect(zBoxX1, zBoxY1, zBoxX2, zBoxY2, 0.9f, 0.9f, 0.9f);
+    }
+    PrimitiveRenderer::drawOutlineRect(zBoxX1, zBoxY1, zBoxX2, zBoxY2, 0.0f, 0.0f, 0.0f, 1.0f);
+
+    glColor3f(0.2f, 0.2f, 0.2f);
+    std::string zText;
+    if (isZActive) {
+        zText = "Z: " + state.activeInputField.text;
+    } else {
+        std::ostringstream stream;
+        stream << std::fixed << std::setprecision(3) << values[2];
+        zText = "Z: " + stream.str();
+    }
+    PrimitiveRenderer::drawText(zText, zBoxX1 + PrimitiveRenderer::pxToNDCx(5, width), inputY - PrimitiveRenderer::pxToNDCy(15, height), GLUT_BITMAP_HELVETICA_12);
+
+    // Store original values for cancellation
+    static float originalValues[3] = {0.0f, 0.0f, 0.0f};
+    static bool hasOriginalValues = false;
+
+    // Handle input box clicks
+    if (state.mouseClicked) {
+        if (hoverX && !isXActive) {
+            // Store original value before activating
+            originalValues[0] = values[0];
+            originalValues[1] = values[1];
+            originalValues[2] = values[2];
+            hasOriginalValues = true;
+
+            state.activeInputField.panelType = panelType;
+            state.activeInputField.axis = 0;
+            state.activeInputField.active = true;
+            state.activeInputField.text = ""; // Start with empty text
+            std::cout << "Editing " << title << " X value\n";
+        } else if (hoverY && !isYActive) {
+            // Store original value before activating
+            originalValues[0] = values[0];
+            originalValues[1] = values[1];
+            originalValues[2] = values[2];
+            hasOriginalValues = true;
+
+            state.activeInputField.panelType = panelType;
+            state.activeInputField.axis = 1;
+            state.activeInputField.active = true;
+            state.activeInputField.text = ""; // Start with empty text
+            std::cout << "Editing " << title << " Y value\n";
+        } else if (hoverZ && !isZActive) {
+            // Store original value before activating
+            originalValues[0] = values[0];
+            originalValues[1] = values[1];
+            originalValues[2] = values[2];
+            hasOriginalValues = true;
+
+            state.activeInputField.panelType = panelType;
+            state.activeInputField.axis = 2;
+            state.activeInputField.active = true;
+            state.activeInputField.text = ""; // Start with empty text
+            std::cout << "Editing " << title << " Z value\n";
+        }
+    }
 
     float resetBtnY = inputY - inputBoxHeight - PrimitiveRenderer::pxToNDCy(10, height);
     float resetBtnWidth = PrimitiveRenderer::pxToNDCx(60, width);
     float resetBtnHeight = PrimitiveRenderer::pxToNDCy(25, height);
     bool hoverReset = PrimitiveRenderer::isInsideNDC(state.mouseX, state.mouseY, width, height,
-                                                    panelX1 + PrimitiveRenderer::pxToNDCx(15, width), resetBtnY - resetBtnHeight,
-                                                    panelX1 + PrimitiveRenderer::pxToNDCx(15, width) + resetBtnWidth, resetBtnY);
+                            panelX1 + PrimitiveRenderer::pxToNDCx(15, width), resetBtnY - resetBtnHeight,
+                            panelX1 + PrimitiveRenderer::pxToNDCx(15, width) + resetBtnWidth, resetBtnY);
 
     PrimitiveRenderer::drawRect(panelX1 + PrimitiveRenderer::pxToNDCx(15, width), resetBtnY - resetBtnHeight,
-                              panelX1 + PrimitiveRenderer::pxToNDCx(15, width) + resetBtnWidth, resetBtnY,
-                              0.32f + (hoverReset ? 0.08f : 0.0f), 0.32f + (hoverReset ? 0.08f : 0.0f), 0.32f + (hoverReset ? 0.08f : 0.0f));
+                                panelX1 + PrimitiveRenderer::pxToNDCx(15, width) + resetBtnWidth, resetBtnY,
+                                0.32f + (hoverReset ? 0.08f : 0.0f), 0.32f + (hoverReset ? 0.08f : 0.0f), 0.32f + (hoverReset ? 0.08f : 0.0f));
     PrimitiveRenderer::drawOutlineRect(panelX1 + PrimitiveRenderer::pxToNDCx(15, width), resetBtnY - resetBtnHeight,
-                                     panelX1 + PrimitiveRenderer::pxToNDCx(15, width) + resetBtnWidth, resetBtnY, 0,0,0,1.0f);
+                                        panelX1 + PrimitiveRenderer::pxToNDCx(15, width) + resetBtnWidth, resetBtnY, 0,0,0,1.0f);
 
     glColor3f(1,1,1);
     PrimitiveRenderer::drawText("Reset", panelX1 + PrimitiveRenderer::pxToNDCx(25, width), resetBtnY - PrimitiveRenderer::pxToNDCy(15, height), GLUT_BITMAP_HELVETICA_12);
-}
 
-void drawCube(float centerX, float centerY, float size) {
-    float s = size * 0.5f;
+    // Handle reset button click for all panels
+    if (hoverReset && state.mouseClicked) {
+        if (title == "Translate") {
+            // Reset translation to middle of allowed ranges at current Z position
+            float currentXMin, currentXMax, currentYMin, currentYMax;
+            getCurrentBorders(state.translate[2], currentXMin, currentXMax, currentYMin, currentYMax);
 
-    // Save current matrix
-    glMatrixMode(GL_MODELVIEW);
-    glPushMatrix();
+            state.translate[0] = (currentXMin + currentXMax) / 2.0f;
+            state.translate[1] = (currentYMin + currentYMax) / 2.0f;
+            state.translate[2] = Z_MAX - 0.1f;
 
-    // Move to position and apply rotation for 3D effect
-    glTranslatef(centerX, centerY, 0);
-    glRotatef(30.0f, 1.0f, 0.0f, 0.0f);
-    glRotatef(45.0f, 0.0f, 1.0f, 0.0f);
-
-    // Front face
-    glBegin(GL_QUADS);
-    glColor3f(0.8f, 0.2f, 0.2f);
-    glVertex3f(-s, -s, s);
-    glVertex3f(s, -s, s);
-    glVertex3f(s, s, s);
-    glVertex3f(-s, s, s);
-
-    // Back face
-    glColor3f(0.6f, 0.1f, 0.1f);
-    glVertex3f(-s, -s, -s);
-    glVertex3f(-s, s, -s);
-    glVertex3f(s, s, -s);
-    glVertex3f(s, -s, -s);
-
-    // Top face
-    glColor3f(0.9f, 0.3f, 0.3f);
-    glVertex3f(-s, s, -s);
-    glVertex3f(-s, s, s);
-    glVertex3f(s, s, s);
-    glVertex3f(s, s, -s);
-
-    // Bottom face
-    glColor3f(0.5f, 0.1f, 0.1f);
-    glVertex3f(-s, -s, -s);
-    glVertex3f(s, -s, -s);
-    glVertex3f(s, -s, s);
-    glVertex3f(-s, -s, s);
-
-    // Right face
-    glColor3f(0.7f, 0.15f, 0.15f);
-    glVertex3f(s, -s, -s);
-    glVertex3f(s, s, -s);
-    glVertex3f(s, s, s);
-    glVertex3f(s, -s, s);
-
-    // Left face
-    glColor3f(0.6f, 0.12f, 0.12f);
-    glVertex3f(-s, -s, -s);
-    glVertex3f(-s, -s, s);
-    glVertex3f(-s, s, s);
-    glVertex3f(-s, s, -s);
-    glEnd();
-
-    glPopMatrix();
-}
-
-void drawSphere(float centerX, float centerY, float radius) {
-    const int slices = 8;
-    const int stacks = 8;
-
-    glMatrixMode(GL_MODELVIEW);
-    glPushMatrix();
-    glTranslatef(centerX, centerY, 0);
-    glRotatef(30.0f, 1.0f, 0.0f, 0.0f);
-
-    glColor3f(0.2f, 0.8f, 0.2f);
-
-    for (int i = 0; i < stacks; ++i) {
-        float phi1 = (float)i / stacks * 3.14159f;
-        float phi2 = (float)(i + 1) / stacks * 3.14159f;
-
-        glBegin(GL_QUAD_STRIP);
-        for (int j = 0; j <= slices; ++j) {
-            float theta = (float)j / slices * 2.0f * 3.14159f;
-
-            float x1 = radius * std::sin(phi1) * std::cos(theta);
-            float y1 = radius * std::cos(phi1);
-            float z1 = radius * std::sin(phi1) * std::sin(theta);
-
-            float x2 = radius * std::sin(phi2) * std::cos(theta);
-            float y2 = radius * std::cos(phi2);
-            float z2 = radius * std::sin(phi2) * std::sin(theta);
-
-            glVertex3f(x1, y1, z1);
-            glVertex3f(x2, y2, z2);
+            std::cout << "Translation reset to default values\n";
+        } else if (title == "Scaling") {
+            state.scale[0] = 1.0f;
+            state.scale[1] = 1.0f;
+            state.scale[2] = 1.0f;
+            std::cout << "Scaling reset to default values\n";
+        } else if (title == "Rotation") {
+            state.rotate[0] = 0.0f;
+            state.rotate[1] = 0.0f;
+            state.rotate[2] = 0.0f;
+            std::cout << "Rotation reset to default values\n";
         }
-        glEnd();
     }
-
-    glPopMatrix();
 }
 
-void drawCone(float centerX, float centerY, float baseRadius, float height) {
-    const int segments = 16;
 
-    glMatrixMode(GL_MODELVIEW);
-    glPushMatrix();
-    glTranslatef(centerX, centerY, 0);
-    glRotatef(30.0f, 1.0f, 0.0f, 0.0f);
-    glRotatef(45.0f, 0.0f, 1.0f, 0.0f);
-
-    // Base
-    glColor3f(0.8f, 0.8f, 0.2f);
-    glBegin(GL_TRIANGLE_FAN);
-    glVertex3f(0.0f, -height/2, 0.0f);
-    for (int i = 0; i <= segments; ++i) {
-        float angle = (float)i / segments * 2.0f * 3.14159f;
-        float x = baseRadius * std::cos(angle);
-        float z = baseRadius * std::sin(angle);
-        glVertex3f(x, -height/2, z);
-    }
-    glEnd();
-
-    // Side
-    glColor3f(0.9f, 0.9f, 0.3f);
-    glBegin(GL_TRIANGLE_FAN);
-    glVertex3f(0.0f, height/2, 0.0f);
-    for (int i = 0; i <= segments; ++i) {
-        float angle = (float)i / segments * 2.0f * 3.14159f;
-        float x = baseRadius * std::cos(angle);
-        float z = baseRadius * std::sin(angle);
-        glVertex3f(x, -height/2, z);
-    }
-    glEnd();
-
-    glPopMatrix();
-}
-
-void drawCylinder(float centerX, float centerY, float radius, float height) {
-    const int segments = 16;
-
-    glMatrixMode(GL_MODELVIEW);
-    glPushMatrix();
-    glTranslatef(centerX, centerY, 0);
-    glRotatef(30.0f, 1.0f, 0.0f, 0.0f);
-    glRotatef(45.0f, 0.0f, 1.0f, 0.0f);
-
-    // Top cap
-    glColor3f(0.2f, 0.8f, 0.8f);
-    glBegin(GL_TRIANGLE_FAN);
-    glVertex3f(0.0f, height/2, 0.0f);
-    for (int i = 0; i <= segments; ++i) {
-        float angle = (float)i / segments * 2.0f * 3.14159f;
-        float x = radius * std::cos(angle);
-        float z = radius * std::sin(angle);
-        glVertex3f(x, height/2, z);
-    }
-    glEnd();
-
-    // Bottom cap
-    glColor3f(0.15f, 0.7f, 0.7f);
-    glBegin(GL_TRIANGLE_FAN);
-    glVertex3f(0.0f, -height/2, 0.0f);
-    for (int i = 0; i <= segments; ++i) {
-        float angle = (float)i / segments * 2.0f * 3.14159f;
-        float x = radius * std::cos(angle);
-        float z = radius * std::sin(angle);
-        glVertex3f(x, -height/2, z);
-    }
-    glEnd();
-
-    // Side
-    glColor3f(0.25f, 0.9f, 0.9f);
-    glBegin(GL_QUAD_STRIP);
-    for (int i = 0; i <= segments; ++i) {
-        float angle = (float)i / segments * 2.0f * 3.14159f;
-        float x = radius * std::cos(angle);
-        float z = radius * std::sin(angle);
-        glVertex3f(x, -height/2, z);
-        glVertex3f(x, height/2, z);
-    }
-    glEnd();
-
-    glPopMatrix();
-}
-
-void drawTorus(float centerX, float centerY, float majorRadius, float minorRadius) {
-    const int majorSegments = 12;
-    const int minorSegments = 8;
-
-    glMatrixMode(GL_MODELVIEW);
-    glPushMatrix();
-    glTranslatef(centerX, centerY, 0);
-    glRotatef(30.0f, 1.0f, 0.0f, 0.0f);
-    glRotatef(45.0f, 0.0f, 1.0f, 0.0f);
-
-    glColor3f(0.8f, 0.2f, 0.8f);
-
-    for (int i = 0; i < majorSegments; ++i) {
-        glBegin(GL_QUAD_STRIP);
-        for (int j = 0; j <= minorSegments; ++j) {
-            for (int k = 0; k < 2; ++k) {
-                float majorAngle = (float)(i + k) / majorSegments * 2.0f * 3.14159f;
-                float minorAngle = (float)j / minorSegments * 2.0f * 3.14159f;
-
-                float x = (majorRadius + minorRadius * std::cos(minorAngle)) * std::cos(majorAngle);
-                float y = minorRadius * std::sin(minorAngle);
-                float z = (majorRadius + minorRadius * std::cos(minorAngle)) * std::sin(majorAngle);
-
-                glVertex3f(x, y, z);
-            }
-        }
-        glEnd();
-    }
-
-    glPopMatrix();
-}
-
-void drawPyramid(float centerX, float centerY, float baseSize, float height) {
-    float s = baseSize * 0.5f;
-
-    glMatrixMode(GL_MODELVIEW);
-    glPushMatrix();
-    glTranslatef(centerX, centerY, 0);
-    glRotatef(30.0f, 1.0f, 0.0f, 0.0f);
-    glRotatef(45.0f, 0.0f, 1.0f, 0.0f);
-
-    // Base (square)
-    glColor3f(0.2f, 0.2f, 0.8f);
-    glBegin(GL_QUADS);
-    glVertex3f(-s, -height/2, -s);
-    glVertex3f(s, -height/2, -s);
-    glVertex3f(s, -height/2, s);
-    glVertex3f(-s, -height/2, s);
-    glEnd();
-
-    // Sides (triangles)
-    glColor3f(0.3f, 0.3f, 0.9f);
-
-    // Front
-    glBegin(GL_TRIANGLES);
-    glVertex3f(-s, -height/2, s);
-    glVertex3f(s, -height/2, s);
-    glVertex3f(0.0f, height/2, 0.0f);
-
-    // Right
-    glVertex3f(s, -height/2, s);
-    glVertex3f(s, -height/2, -s);
-    glVertex3f(0.0f, height/2, 0.0f);
-
-    // Back
-    glVertex3f(s, -height/2, -s);
-    glVertex3f(-s, -height/2, -s);
-    glVertex3f(0.0f, height/2, 0.0f);
-
-    // Left
-    glVertex3f(-s, -height/2, -s);
-    glVertex3f(-s, -height/2, s);
-    glVertex3f(0.0f, height/2, 0.0f);
-    glEnd();
-
-    glPopMatrix();
-}
 
 void Panels::drawShapesPanel(float panelX1, float panelY1, float panelWidth, float panelHeight,
-                            ApplicationState& state, int width, int height) {
+                             ApplicationState& state, int width, int height) {
     int panelXPx = (int)((panelX1 + 1.0f) * 0.5f * width);
     int panelYPx = (int)((1.0f - (panelY1 + panelHeight)) * 0.5f * height);
     int panelWidthPx = (int)(panelWidth * 0.5f * width);
@@ -352,36 +235,109 @@ void Panels::drawShapesPanel(float panelX1, float panelY1, float panelWidth, flo
 
     float row1Y = panelY1 + panelHeight - PrimitiveRenderer::pxToNDCy(50, height) + scrollOffset;
 
-    
-    // Square (Cube) button
-    float squareX1 = panelX1 + PrimitiveRenderer::pxToNDCx(10, width);
-    float squareX2 = squareX1 + buttonWidth;
-    bool hoverSquare = PrimitiveRenderer::isInsideNDC(state.mouseX, state.mouseY, width, height, squareX1, row1Y - buttonHeight, squareX2, row1Y);
-    PrimitiveRenderer::drawRect(squareX1, row1Y - buttonHeight, squareX2, row1Y, 0.3f + (hoverSquare ? 0.1f : 0.0f), 0.3f + (hoverSquare ? 0.1f : 0.0f), 0.3f + (hoverSquare ? 0.1f : 0.0f));
-    PrimitiveRenderer::drawOutlineRect(squareX1, row1Y - buttonHeight, squareX2, row1Y, 0.0f, 0.0f, 0.0f, 1.5f);
+    // Cube button
+    float cubeX1 = panelX1 + PrimitiveRenderer::pxToNDCx(10, width);
+    float cubeX2 = cubeX1 + buttonWidth;
+    bool hoverCube = PrimitiveRenderer::isInsideNDC(state.mouseX, state.mouseY, width, height, cubeX1, row1Y - buttonHeight, cubeX2, row1Y);
+    bool isCubeSelected = (state.currentShape == ShapeType::CUBE);
+
+    PrimitiveRenderer::drawRect(cubeX1, row1Y - buttonHeight, cubeX2, row1Y,
+            isCubeSelected ? 0.5f : (0.3f + (hoverCube ? 0.1f : 0.0f)),
+            isCubeSelected ? 0.5f : (0.3f + (hoverCube ? 0.1f : 0.0f)),
+            isCubeSelected ? 0.5f : (0.3f + (hoverCube ? 0.1f : 0.0f)));
+    PrimitiveRenderer::drawOutlineRect(cubeX1, row1Y - buttonHeight, cubeX2, row1Y, 0.0f, 0.0f, 0.0f, 1.5f);
+
+    // Draw 3D cube symbol
+    float symbolSize = 0.03f;
+    float symbolX = cubeX1 + buttonWidth * 0.5f;
+    float symbolY = row1Y - buttonHeight * 0.5f;
+
+    glPushMatrix();
+    glTranslatef(symbolX, symbolY, 0.0f);
+    glScalef(symbolSize, symbolSize, symbolSize);
+
+    // Front face (light gray)
+    glColor3f(0.8f, 0.8f, 0.8f);
+    glBegin(GL_QUADS);
+    glVertex3f(-1.0f, -1.0f, 1.0f);
+    glVertex3f(1.0f, -1.0f, 1.0f);
+    glVertex3f(1.0f, 1.0f, 1.0f);
+    glVertex3f(-1.0f, 1.0f, 1.0f);
+    glEnd();
+
+    // Right face (medium gray)
+    glColor3f(0.6f, 0.6f, 0.6f);
+    glBegin(GL_QUADS);
+    glVertex3f(1.0f, -1.0f, 1.0f);
+    glVertex3f(1.0f, -1.0f, -1.0f);
+    glVertex3f(1.0f, 1.0f, -1.0f);
+    glVertex3f(1.0f, 1.0f, 1.0f);
+    glEnd();
+
+    // Top face (dark gray)
+    glColor3f(0.4f, 0.4f, 0.4f);
+    glBegin(GL_QUADS);
+    glVertex3f(-1.0f, 1.0f, 1.0f);
+    glVertex3f(1.0f, 1.0f, 1.0f);
+    glVertex3f(1.0f, 1.0f, -1.0f);
+    glVertex3f(-1.0f, 1.0f, -1.0f);
+    glEnd();
+
+    glPopMatrix();
 
     glColor3f(1.0f, 1.0f, 1.0f);
-    PrimitiveRenderer::drawText("Cube", squareX1 + PrimitiveRenderer::pxToNDCx(25, width), row1Y - PrimitiveRenderer::pxToNDCy(35, height), GLUT_BITMAP_HELVETICA_12);
-
-    // Draw 3D cube
-    float cubeCenterX = squareX1 + buttonWidth * 0.5f;
-    float cubeCenterY = row1Y - buttonHeight * 0.7f;
-    drawCube(cubeCenterX, cubeCenterY, PrimitiveRenderer::pxToNDCx(15, width));
+    PrimitiveRenderer::drawText("Cube", cubeX1 + PrimitiveRenderer::pxToNDCx(20, width), row1Y - PrimitiveRenderer::pxToNDCy(35, height), GLUT_BITMAP_HELVETICA_12);
 
     // Sphere button
-    float sphereX1 = squareX2 + buttonGap;
+    float sphereX1 = cubeX2 + buttonGap;
     float sphereX2 = sphereX1 + buttonWidth;
     bool hoverSphere = PrimitiveRenderer::isInsideNDC(state.mouseX, state.mouseY, width, height, sphereX1, row1Y - buttonHeight, sphereX2, row1Y);
-    PrimitiveRenderer::drawRect(sphereX1, row1Y - buttonHeight, sphereX2, row1Y, 0.3f + (hoverSphere ? 0.1f : 0.0f), 0.3f + (hoverSphere ? 0.1f : 0.0f), 0.3f + (hoverSphere ? 0.1f : 0.0f));
+    bool isSphereSelected = (state.currentShape == ShapeType::SPHERE);
+
+    PrimitiveRenderer::drawRect(sphereX1, row1Y - buttonHeight, sphereX2, row1Y,
+            isSphereSelected ? 0.5f : (0.3f + (hoverSphere ? 0.1f : 0.0f)),
+            isSphereSelected ? 0.5f : (0.3f + (hoverSphere ? 0.1f : 0.0f)),
+            isSphereSelected ? 0.5f : (0.3f + (hoverSphere ? 0.1f : 0.0f)));
     PrimitiveRenderer::drawOutlineRect(sphereX1, row1Y - buttonHeight, sphereX2, row1Y, 0.0f, 0.0f, 0.0f, 1.5f);
+
+    // Draw 3D sphere symbol
+    symbolX = sphereX1 + buttonWidth * 0.5f;
+    symbolY = row1Y - buttonHeight * 0.5f;
+
+    glPushMatrix();
+    glTranslatef(symbolX, symbolY, 0.0f);
+    glScalef(symbolSize, symbolSize, symbolSize);
+
+    int slices = 8;
+    int stacks = 6;
+    for (int i = 0; i <= stacks; ++i) {
+        float phi = Constants::PI * i / stacks;
+        glBegin(GL_QUAD_STRIP);
+        for (int j = 0; j <= slices; ++j) {
+            float theta = 2.0f * Constants::PI * j / slices;
+            float x = sin(phi) * cos(theta);
+            float y = cos(phi);
+            float z = sin(phi) * sin(theta);
+
+            // Vary color based on position for 3D effect
+            float shade = 0.5f + y * 0.3f;
+            glColor3f(shade, shade, shade);
+            glVertex3f(x, y, z);
+
+            x = sin(phi + Constants::PI / stacks) * cos(theta);
+            y = cos(phi + Constants::PI / stacks);
+            z = sin(phi + Constants::PI / stacks) * sin(theta);
+
+            shade = 0.5f + y * 0.3f;
+            glColor3f(shade, shade, shade);
+            glVertex3f(x, y, z);
+        }
+        glEnd();
+    }
+    glPopMatrix();
 
     glColor3f(1.0f, 1.0f, 1.0f);
     PrimitiveRenderer::drawText("Sphere", sphereX1 + PrimitiveRenderer::pxToNDCx(20, width), row1Y - PrimitiveRenderer::pxToNDCy(35, height), GLUT_BITMAP_HELVETICA_12);
-
-    // Draw 3D sphere
-    float sphereCenterX = sphereX1 + buttonWidth * 0.5f;
-    float sphereCenterY = row1Y - buttonHeight * 0.7f;
-    drawSphere(sphereCenterX, sphereCenterY, PrimitiveRenderer::pxToNDCx(10, width));
 
     float row2Y = row1Y - buttonHeight - rowGap;
 
@@ -389,31 +345,106 @@ void Panels::drawShapesPanel(float panelX1, float panelY1, float panelWidth, flo
     float coneX1 = panelX1 + PrimitiveRenderer::pxToNDCx(10, width);
     float coneX2 = coneX1 + buttonWidth;
     bool hoverCone = PrimitiveRenderer::isInsideNDC(state.mouseX, state.mouseY, width, height, coneX1, row2Y - buttonHeight, coneX2, row2Y);
-    PrimitiveRenderer::drawRect(coneX1, row2Y - buttonHeight, coneX2, row2Y, 0.3f + (hoverCone ? 0.1f : 0.0f), 0.3f + (hoverCone ? 0.1f : 0.0f), 0.3f + (hoverCone ? 0.1f : 0.0f));
+    bool isConeSelected = (state.currentShape == ShapeType::CONE);
+
+    PrimitiveRenderer::drawRect(coneX1, row2Y - buttonHeight, coneX2, row2Y,
+            isConeSelected ? 0.5f : (0.3f + (hoverCone ? 0.1f : 0.0f)),
+            isConeSelected ? 0.5f : (0.3f + (hoverCone ? 0.1f : 0.0f)),
+            isConeSelected ? 0.5f : (0.3f + (hoverCone ? 0.1f : 0.0f)));
     PrimitiveRenderer::drawOutlineRect(coneX1, row2Y - buttonHeight, coneX2, row2Y, 0.0f, 0.0f, 0.0f, 1.5f);
+
+    // Draw 3D cone symbol
+    symbolX = coneX1 + buttonWidth * 0.5f;
+    symbolY = row2Y - buttonHeight * 0.5f;
+
+    glPushMatrix();
+    glTranslatef(symbolX, symbolY, 0.0f);
+    glScalef(symbolSize, symbolSize, symbolSize);
+
+    // Base (dark gray)
+    glColor3f(0.4f, 0.4f, 0.4f);
+    glBegin(GL_TRIANGLE_FAN);
+    glVertex3f(0.0f, -1.0f, 0.0f);
+    for (int i = 0; i <= 16; ++i) {
+        float theta = 2.0f * Constants::PI * i / 16;
+        float x = cos(theta);
+        float z = sin(theta);
+        glVertex3f(x, -1.0f, z);
+    }
+    glEnd();
+
+    // Side (gradient from dark to light)
+    glBegin(GL_TRIANGLE_FAN);
+    glVertex3f(0.0f, 1.0f, 0.0f);
+    for (int i = 0; i <= 16; ++i) {
+        float theta = 2.0f * Constants::PI * i / 16;
+        float x = cos(theta);
+        float z = sin(theta);
+        float shade = 0.6f - fabs(sin(theta)) * 0.2f;
+        glColor3f(shade, shade, shade);
+        glVertex3f(x, -1.0f, z);
+    }
+    glEnd();
+    glPopMatrix();
 
     glColor3f(1.0f, 1.0f, 1.0f);
     PrimitiveRenderer::drawText("Cone", coneX1 + PrimitiveRenderer::pxToNDCx(25, width), row2Y - PrimitiveRenderer::pxToNDCy(35, height), GLUT_BITMAP_HELVETICA_12);
-
-    // Draw 3D cone
-    float coneCenterX = coneX1 + buttonWidth * 0.5f;
-    float coneCenterY = row2Y - buttonHeight * 0.7f;
-    drawCone(coneCenterX, coneCenterY, PrimitiveRenderer::pxToNDCx(8, width), PrimitiveRenderer::pxToNDCy(15, height));
 
     // Cylinder button
     float cylinderX1 = coneX2 + buttonGap;
     float cylinderX2 = cylinderX1 + buttonWidth;
     bool hoverCylinder = PrimitiveRenderer::isInsideNDC(state.mouseX, state.mouseY, width, height, cylinderX1, row2Y - buttonHeight, cylinderX2, row2Y);
-    PrimitiveRenderer::drawRect(cylinderX1, row2Y - buttonHeight, cylinderX2, row2Y, 0.3f + (hoverCylinder ? 0.1f : 0.0f), 0.3f + (hoverCylinder ? 0.1f : 0.0f), 0.3f + (hoverCylinder ? 0.1f : 0.0f));
+    bool isCylinderSelected = (state.currentShape == ShapeType::CYLINDER);
+
+    PrimitiveRenderer::drawRect(cylinderX1, row2Y - buttonHeight, cylinderX2, row2Y,
+            isCylinderSelected ? 0.5f : (0.3f + (hoverCylinder ? 0.1f : 0.0f)),
+            isCylinderSelected ? 0.5f : (0.3f + (hoverCylinder ? 0.1f : 0.0f)),
+            isCylinderSelected ? 0.5f : (0.3f + (hoverCylinder ? 0.1f : 0.0f)));
     PrimitiveRenderer::drawOutlineRect(cylinderX1, row2Y - buttonHeight, cylinderX2, row2Y, 0.0f, 0.0f, 0.0f, 1.5f);
+
+    // Draw 3D cylinder symbol
+    symbolX = cylinderX1 + buttonWidth * 0.5f;
+    symbolY = row2Y - buttonHeight * 0.5f;
+
+    glPushMatrix();
+    glTranslatef(symbolX, symbolY, 0.0f);
+    glScalef(symbolSize * 0.8f, symbolSize * 0.8f, symbolSize * 0.8f);
+
+    // Top (light gray)
+    glColor3f(0.8f, 0.8f, 0.8f);
+    glBegin(GL_TRIANGLE_FAN);
+    glVertex3f(0.0f, 1.0f, 0.0f);
+    for (int i = 0; i <= 16; ++i) {
+        float theta = 2.0f * Constants::PI * i / 16;
+        glVertex3f(cos(theta), 1.0f, sin(theta));
+    }
+    glEnd();
+
+    // Bottom (dark gray)
+    glColor3f(0.4f, 0.4f, 0.4f);
+    glBegin(GL_TRIANGLE_FAN);
+    glVertex3f(0.0f, -1.0f, 0.0f);
+    for (int i = 0; i <= 16; ++i) {
+        float theta = 2.0f * Constants::PI * i / 16;
+        glVertex3f(cos(theta), -1.0f, sin(theta));
+    }
+    glEnd();
+
+    // Side (medium gray)
+    glColor3f(0.6f, 0.6f, 0.6f);
+    glBegin(GL_QUAD_STRIP);
+    for (int i = 0; i <= 16; ++i) {
+        float theta = 2.0f * Constants::PI * i / 16;
+        float x = cos(theta);
+        float z = sin(theta);
+        glVertex3f(x, 1.0f, z);
+        glVertex3f(x, -1.0f, z);
+    }
+    glEnd();
+    glPopMatrix();
 
     glColor3f(1.0f, 1.0f, 1.0f);
     PrimitiveRenderer::drawText("Cylinder", cylinderX1 + PrimitiveRenderer::pxToNDCx(15, width), row2Y - PrimitiveRenderer::pxToNDCy(35, height), GLUT_BITMAP_HELVETICA_12);
-
-    // Draw 3D cylinder
-    float cylinderCenterX = cylinderX1 + buttonWidth * 0.5f;
-    float cylinderCenterY = row2Y - buttonHeight * 0.7f;
-    drawCylinder(cylinderCenterX, cylinderCenterY, PrimitiveRenderer::pxToNDCx(7, width), PrimitiveRenderer::pxToNDCy(18, height));
 
     float row3Y = row2Y - buttonHeight - rowGap;
 
@@ -421,31 +452,115 @@ void Panels::drawShapesPanel(float panelX1, float panelY1, float panelWidth, flo
     float torusX1 = panelX1 + PrimitiveRenderer::pxToNDCx(10, width);
     float torusX2 = torusX1 + buttonWidth;
     bool hoverTorus = PrimitiveRenderer::isInsideNDC(state.mouseX, state.mouseY, width, height, torusX1, row3Y - buttonHeight, torusX2, row3Y);
-    PrimitiveRenderer::drawRect(torusX1, row3Y - buttonHeight, torusX2, row3Y, 0.3f + (hoverTorus ? 0.1f : 0.0f), 0.3f + (hoverTorus ? 0.1f : 0.0f), 0.3f + (hoverTorus ? 0.1f : 0.0f));
+    bool isTorusSelected = (state.currentShape == ShapeType::TORUS);
+
+    PrimitiveRenderer::drawRect(torusX1, row3Y - buttonHeight, torusX2, row3Y,
+            isTorusSelected ? 0.5f : (0.3f + (hoverTorus ? 0.1f : 0.0f)),
+            isTorusSelected ? 0.5f : (0.3f + (hoverTorus ? 0.1f : 0.0f)),
+            isTorusSelected ? 0.5f : (0.3f + (hoverTorus ? 0.1f : 0.0f)));
     PrimitiveRenderer::drawOutlineRect(torusX1, row3Y - buttonHeight, torusX2, row3Y, 0.0f, 0.0f, 0.0f, 1.5f);
+
+    // Draw 3D torus symbol
+    symbolX = torusX1 + buttonWidth * 0.5f;
+    symbolY = row3Y - buttonHeight * 0.5f;
+
+    glPushMatrix();
+    glTranslatef(symbolX, symbolY, 0.0f);
+    glScalef(symbolSize, symbolSize, symbolSize);
+
+    float majorRadius = 1.0f;
+    float minorRadius = 0.3f;
+    int majorSlices = 12;
+    int minorSlices = 8;
+
+    for (int i = 0; i < majorSlices; ++i) {
+        glBegin(GL_QUAD_STRIP);
+        for (int j = 0; j <= minorSlices; ++j) {
+            for (int k = 0; k <= 1; ++k) {
+                float phi = 2.0f * Constants::PI * (i + k) / majorSlices;
+                float theta = 2.0f * Constants::PI * j / minorSlices;
+
+                float x = (majorRadius + minorRadius * cos(theta)) * cos(phi);
+                float y = minorRadius * sin(theta);
+                float z = (majorRadius + minorRadius * cos(theta)) * sin(phi);
+
+                // Vary color based on position
+                float shade = 0.5f + cos(theta) * 0.3f;
+                glColor3f(shade, shade, shade);
+                glVertex3f(x, y, z);
+            }
+        }
+        glEnd();
+    }
+    glPopMatrix();
 
     glColor3f(1.0f, 1.0f, 1.0f);
     PrimitiveRenderer::drawText("Torus", torusX1 + PrimitiveRenderer::pxToNDCx(25, width), row3Y - PrimitiveRenderer::pxToNDCy(35, height), GLUT_BITMAP_HELVETICA_12);
-
-    // Draw 3D torus
-    float torusCenterX = torusX1 + buttonWidth * 0.5f;
-    float torusCenterY = row3Y - buttonHeight * 0.7f;
-    drawTorus(torusCenterX, torusCenterY, PrimitiveRenderer::pxToNDCx(8, width), PrimitiveRenderer::pxToNDCx(3, width));
 
     // Pyramid button
     float pyramidX1 = torusX2 + buttonGap;
     float pyramidX2 = pyramidX1 + buttonWidth;
     bool hoverPyramid = PrimitiveRenderer::isInsideNDC(state.mouseX, state.mouseY, width, height, pyramidX1, row3Y - buttonHeight, pyramidX2, row3Y);
-    PrimitiveRenderer::drawRect(pyramidX1, row3Y - buttonHeight, pyramidX2, row3Y, 0.3f + (hoverPyramid ? 0.1f : 0.0f), 0.3f + (hoverPyramid ? 0.1f : 0.0f), 0.3f + (hoverPyramid ? 0.1f : 0.0f));
+    bool isPyramidSelected = (state.currentShape == ShapeType::PYRAMID);
+
+    PrimitiveRenderer::drawRect(pyramidX1, row3Y - buttonHeight, pyramidX2, row3Y,
+            isPyramidSelected ? 0.5f : (0.3f + (hoverPyramid ? 0.1f : 0.0f)),
+            isPyramidSelected ? 0.5f : (0.3f + (hoverPyramid ? 0.1f : 0.0f)),
+            isPyramidSelected ? 0.5f : (0.3f + (hoverPyramid ? 0.1f : 0.0f)));
     PrimitiveRenderer::drawOutlineRect(pyramidX1, row3Y - buttonHeight, pyramidX2, row3Y, 0.0f, 0.0f, 0.0f, 1.5f);
+
+    // Draw 3D pyramid symbol
+    symbolX = pyramidX1 + buttonWidth * 0.5f;
+    symbolY = row3Y - buttonHeight * 0.5f;
+
+    glPushMatrix();
+    glTranslatef(symbolX, symbolY, 0.0f);
+    glScalef(symbolSize, symbolSize, symbolSize);
+
+    // Base (dark gray)
+    glColor3f(0.4f, 0.4f, 0.4f);
+    glBegin(GL_QUADS);
+    glVertex3f(-1.0f, -1.0f, -1.0f);
+    glVertex3f(1.0f, -1.0f, -1.0f);
+    glVertex3f(1.0f, -1.0f, 1.0f);
+    glVertex3f(-1.0f, -1.0f, 1.0f);
+    glEnd();
+
+    // Front face (medium gray)
+    glColor3f(0.6f, 0.6f, 0.6f);
+    glBegin(GL_TRIANGLES);
+    glVertex3f(-1.0f, -1.0f, 1.0f);
+    glVertex3f(1.0f, -1.0f, 1.0f);
+    glVertex3f(0.0f, 1.0f, 0.0f);
+    glEnd();
+
+    // Right face (light gray)
+    glColor3f(0.7f, 0.7f, 0.7f);
+    glBegin(GL_TRIANGLES);
+    glVertex3f(1.0f, -1.0f, 1.0f);
+    glVertex3f(1.0f, -1.0f, -1.0f);
+    glVertex3f(0.0f, 1.0f, 0.0f);
+    glEnd();
+
+    // Back face (medium-dark gray)
+    glColor3f(0.5f, 0.5f, 0.5f);
+    glBegin(GL_TRIANGLES);
+    glVertex3f(1.0f, -1.0f, -1.0f);
+    glVertex3f(-1.0f, -1.0f, -1.0f);
+    glVertex3f(0.0f, 1.0f, 0.0f);
+    glEnd();
+
+    // Left face (medium-light gray)
+    glColor3f(0.65f, 0.65f, 0.65f);
+    glBegin(GL_TRIANGLES);
+    glVertex3f(-1.0f, -1.0f, -1.0f);
+    glVertex3f(-1.0f, -1.0f, 1.0f);
+    glVertex3f(0.0f, 1.0f, 0.0f);
+    glEnd();
+    glPopMatrix();
 
     glColor3f(1.0f, 1.0f, 1.0f);
     PrimitiveRenderer::drawText("Pyramid", pyramidX1 + PrimitiveRenderer::pxToNDCx(20, width), row3Y - PrimitiveRenderer::pxToNDCy(35, height), GLUT_BITMAP_HELVETICA_12);
-
-    // Draw 3D pyramid
-    float pyramidCenterX = pyramidX1 + buttonWidth * 0.5f;
-    float pyramidCenterY = row3Y - buttonHeight * 0.7f;
-    drawPyramid(pyramidCenterX, pyramidCenterY, PrimitiveRenderer::pxToNDCx(12, width), PrimitiveRenderer::pxToNDCy(15, height));
 
     glDisable(GL_SCISSOR_TEST);
 
@@ -463,8 +578,7 @@ void Panels::drawShapesPanel(float panelX1, float panelY1, float panelWidth, flo
 }
 
 void Panels::drawTexturesPanel(float panelX1, float panelY1, float panelWidth, float panelHeight,
-                              ApplicationState& state, int width, int height) {
-    // ... (keep the existing drawTexturesPanel code unchanged)
+                               ApplicationState& state, int width, int height) {
     int panelXPx = (int)((panelX1 + 1.0f) * 0.5f * width);
     int panelYPx = (int)((1.0f - (panelY1 + panelHeight)) * 0.5f * height);
     int panelWidthPx = (int)(panelWidth * 0.5f * width);
