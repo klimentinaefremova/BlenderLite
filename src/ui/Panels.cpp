@@ -1,6 +1,7 @@
 #include "../include/ui/Panels.hpp"
 #include "../include/rendering/PrimitiveRenderer.hpp"
 #include "../include/core/TranslationLimits.hpp"
+#include "../include/core/Constants.hpp"
 #include <iostream>
 #include <algorithm>
 #include <cstdio>
@@ -8,9 +9,241 @@
 #include <sstream>
 #include <iomanip>
 
+// Add this new function to handle color button clicks
+void handleColorButtonClick(int colorIndex, ApplicationState& state) {
+    switch (colorIndex) {
+        case 0: // Black
+            state.currentColor[0] = Constants::COLOR_BLACK[0];
+            state.currentColor[1] = Constants::COLOR_BLACK[1];
+            state.currentColor[2] = Constants::COLOR_BLACK[2];
+            break;
+        case 1: // White
+            state.currentColor[0] = Constants::COLOR_WHITE[0];
+            state.currentColor[1] = Constants::COLOR_WHITE[1];
+            state.currentColor[2] = Constants::COLOR_WHITE[2];
+            break;
+        case 2: // Red
+            state.currentColor[0] = Constants::COLOR_RED[0];
+            state.currentColor[1] = Constants::COLOR_RED[1];
+            state.currentColor[2] = Constants::COLOR_RED[2];
+            break;
+        case 3: // Green
+            state.currentColor[0] = Constants::COLOR_GREEN[0];
+            state.currentColor[1] = Constants::COLOR_GREEN[1];
+            state.currentColor[2] = Constants::COLOR_GREEN[2];
+            break;
+        case 4: // Blue
+            state.currentColor[0] = Constants::COLOR_BLUE[0];
+            state.currentColor[1] = Constants::COLOR_BLUE[1];
+            state.currentColor[2] = Constants::COLOR_BLUE[2];
+            break;
+        case 5: // Magenta
+            state.currentColor[0] = Constants::COLOR_MAGENTA[0];
+            state.currentColor[1] = Constants::COLOR_MAGENTA[1];
+            state.currentColor[2] = Constants::COLOR_MAGENTA[2];
+            break;
+    }
+    std::cout << "Color changed to button " << colorIndex << std::endl;
+}
+
+void Panels::drawTopBarUI(int width, int height, ApplicationState& appState) {
+    float marginPx = 10.0f;
+    float marginX = PrimitiveRenderer::pxToNDCx((int)marginPx, width);
+    float topBarY2 = 1.0f;
+
+    float blenderWpx = 120.0f;
+    float blenderHpx = 48.0f;
+    float blenderX1 = -1.0f + marginX;
+    float blenderX2 = blenderX1 + PrimitiveRenderer::pxToNDCx((int)blenderWpx, width);
+    float blenderH = PrimitiveRenderer::pxToNDCy((int)blenderHpx, height);
+    float blenderY2 = topBarY2 - PrimitiveRenderer::pxToNDCy(8, height);
+    float blenderY1 = blenderY2 - blenderH;
+
+    PrimitiveRenderer::drawRect(blenderX1, blenderY1, blenderX2, blenderY2, 0.38f, 0.38f, 0.38f);
+    PrimitiveRenderer::drawOutlineRect(blenderX1, blenderY1, blenderX2, blenderY2, 0.0f, 0.0f, 0.0f, 2.0f);
+
+    glColor3f(1.0f, 0.0f, 0.0f);
+    float textX = (blenderX1 + blenderX2) * 0.5f - 0.06f;
+    float textY = (blenderY1 + blenderY2) * 0.5f - 0.01f;
+    PrimitiveRenderer::drawText("Blender Lite", textX, textY, GLUT_BITMAP_HELVETICA_18);
+
+    float groupX1 = blenderX2 + marginX;
+    float groupX2 = groupX1 + PrimitiveRenderer::pxToNDCx((int)(140), width);
+
+    float buttonHpx = 28.0f;
+    float saveH = PrimitiveRenderer::pxToNDCy((int)buttonHpx, height);
+    float gapV = PrimitiveRenderer::pxToNDCy(6, height);
+    float save1Y2 = blenderY2;
+    float save1Y1 = save1Y2 - saveH;
+    float save2Y2 = save1Y1 - gapV;
+    float save2Y1 = save2Y2 - saveH;
+
+    bool hoverSave = PrimitiveRenderer::isInsideNDC(appState.mouseX, appState.mouseY, width, height, groupX1, save1Y1, groupX2, save1Y2);
+    PrimitiveRenderer::drawRect(groupX1, save1Y1, groupX2, save1Y2, 0.32f + (hoverSave ? 0.08f : 0.0f), 0.32f + (hoverSave ? 0.08f : 0.0f), 0.32f + (hoverSave ? 0.08f : 0.0f));
+    PrimitiveRenderer::drawOutlineRect(groupX1, save1Y1, groupX2, save1Y2, 0,0,0,1.5f);
+    glColor3f(1,1,1);
+    PrimitiveRenderer::drawText("Save", groupX1 + 0.02f, (save1Y1 + save1Y2) * 0.5f - 0.01f, GLUT_BITMAP_HELVETICA_18);
+
+    bool hoverSaveAs = PrimitiveRenderer::isInsideNDC(appState.mouseX, appState.mouseY, width, height, groupX1, save2Y1, groupX2, save2Y2);
+    PrimitiveRenderer::drawRect(groupX1, save2Y1, groupX2, save2Y2, 0.32f + (hoverSaveAs ? 0.08f : 0.0f), 0.32f + (hoverSaveAs ? 0.08f : 0.0f), 0.32f + (hoverSaveAs ? 0.08f : 0.0f));
+    PrimitiveRenderer::drawOutlineRect(groupX1, save2Y1, groupX2, save2Y2, 0,0,0,1.5f);
+    glColor3f(1,1,1);
+    PrimitiveRenderer::drawText("Save as", groupX1 + 0.01f, (save2Y1 + save2Y2)*0.5f - 0.01f, GLUT_BITMAP_HELVETICA_18);
+
+    float underY2 = save2Y1 - gapV - 0.0f;
+    float underH = saveH;
+    float underY1 = underY2 - underH;
+    float halfW = (groupX2 - groupX1 - marginX) * 0.5f;
+    float undoX1 = groupX1;
+    float undoX2 = groupX1 + halfW - marginX*0.5f;
+    float redoX1 = undoX2 + marginX*0.5f;
+    float redoX2 = groupX2;
+    bool hoverUndo = PrimitiveRenderer::isInsideNDC(appState.mouseX, appState.mouseY, width, height, undoX1, underY1, undoX2, underY2);
+    bool hoverRedo = PrimitiveRenderer::isInsideNDC(appState.mouseX, appState.mouseY, width, height, redoX1, underY1, redoX2, underY2);
+
+    PrimitiveRenderer::drawRect(undoX1, underY1, undoX2, underY2, 0.32f + (hoverUndo ? 0.08f : 0.0f), 0.32f + (hoverUndo ? 0.08f : 0.0f), 0.32f + (hoverUndo ? 0.08f : 0.0f));
+    PrimitiveRenderer::drawOutlineRect(undoX1, underY1, undoX2, underY2, 0,0,0,1.0f);
+    glColor3f(1,1,1);
+    PrimitiveRenderer::drawText("Undo", undoX1 + 0.01f, (underY1 + underY2)*0.5f - 0.01f, GLUT_BITMAP_HELVETICA_18);
+
+    PrimitiveRenderer::drawRect(redoX1, underY1, redoX2, underY2, 0.32f + (hoverRedo ? 0.08f : 0.0f), 0.32f + (hoverRedo ? 0.08f : 0.0f), 0.32f + (hoverRedo ? 0.08f : 0.0f));
+    PrimitiveRenderer::drawOutlineRect(redoX1, underY1, redoX2, underY2, 0,0,0,1.0f);
+    glColor3f(1,1,1);
+    PrimitiveRenderer::drawText("Redo", redoX1 + 0.01f, (underY1 + underY2)*0.5f - 0.01f, GLUT_BITMAP_HELVETICA_18);
+
+    float centerWpx = 300.0f;
+    float centerX1 = -PrimitiveRenderer::pxToNDCx((int)(centerWpx/2), width);
+    float centerX2 = PrimitiveRenderer::pxToNDCx((int)(centerWpx/2), width);
+
+    float pnameHpx = 20.0f;
+    float pnameH = PrimitiveRenderer::pxToNDCy((int)pnameHpx, height);
+    float pnameY2 = blenderY2;
+    float pnameY1 = pnameY2 - pnameH - PrimitiveRenderer::pxToNDCy(6, height);
+    PrimitiveRenderer::drawRect(centerX1, pnameY1, centerX2, pnameY2, 0.9f, 0.9f, 0.9f);
+    PrimitiveRenderer::drawOutlineRect(centerX1, pnameY1, centerX2, pnameY2, 0,0,0,1.0f);
+    glColor3f(0.2f,0.2f,0.2f);
+    PrimitiveRenderer::drawText("Project Name", centerX1 + 0.03f, (pnameY1 + pnameY2)*0.5f - 0.01f, GLUT_BITMAP_HELVETICA_18);
+
+    float npWpx = 150.0f;
+    float npX1 = -PrimitiveRenderer::pxToNDCx((int)(npWpx/2), width);
+    float npX2 = PrimitiveRenderer::pxToNDCx((int)(npWpx/2), width);
+    float npH = PrimitiveRenderer::pxToNDCy((int)buttonHpx, height);
+    float npY2 = pnameY1 - PrimitiveRenderer::pxToNDCy(8, height);
+    float npY1 = npY2 - npH;
+    bool hoverNewProj = PrimitiveRenderer::isInsideNDC(appState.mouseX, appState.mouseY, width, height, npX1, npY1, npX2, npY2);
+    PrimitiveRenderer::drawRect(npX1, npY1, npX2, npY2, 0.32f + (hoverNewProj ? 0.08f : 0.0f), 0.32f + (hoverNewProj ? 0.08f : 0.0f), 0.32f + (hoverNewProj ? 0.08f : 0.0f));
+    PrimitiveRenderer::drawOutlineRect(npX1, npY1, npX2, npY2, 0,0,0,1.0f);
+    glColor3f(1,1,1);
+    PrimitiveRenderer::drawText("New Project", npX1 + 0.01f, (npY1 + npY2)*0.5f - 0.01f, GLUT_BITMAP_HELVETICA_18);
+
+    float camSizePx = 48.0f;
+    float camSize = PrimitiveRenderer::pxToNDCx((int)camSizePx, width);
+    float camX2 = 1.0f - PrimitiveRenderer::pxToNDCx(50, width);
+    float camX1 = camX2 - camSize;
+    float camY2 = blenderY2;
+    float camY1 = camY2 - PrimitiveRenderer::pxToNDCy((int)camSizePx, height);
+    bool hoverCam = PrimitiveRenderer::isInsideNDC(appState.mouseX, appState.mouseY, width, height, camX1, camY1, camX2, camY2);
+    float camExpandPx = hoverCam ? 6.0f : 0.0f;
+    float camEx = PrimitiveRenderer::pxToNDCx((int)camExpandPx, width);
+
+    PrimitiveRenderer::drawRect(camX1 - camEx, camY1 - camEx, camX2 + camEx, camY2 + camEx, 0.3f, 0.3f, 0.3f);
+    PrimitiveRenderer::drawOutlineRect(camX1 - camEx, camY1 - camEx, camX2 + camEx, camY2 + camEx, 0,0,0,1.0f);
+
+    float camCx = (camX1 + camX2) * 0.5f;
+    float camCy = (camY1 + camY2) * 0.5f;
+    PrimitiveRenderer::drawCircle(camCx, camCy, std::min(camSize, PrimitiveRenderer::pxToNDCy((int)camSizePx, height)) * 0.25f + (hoverCam ? camEx*0.5f : 0.0f), 30, 0.12f, 0.12f, 0.12f);
+
+    glColor3f(1,1,1);
+    float textLine1Y = camY1 - PrimitiveRenderer::pxToNDCy(14, height);
+    float textLine2Y = textLine1Y - PrimitiveRenderer::pxToNDCy(22, height);
+    PrimitiveRenderer::drawText("Take a", camCx - 0.05f, textLine1Y, GLUT_BITMAP_HELVETICA_12);
+    PrimitiveRenderer::drawText("Screenshot", camCx - 0.09f, textLine2Y, GLUT_BITMAP_HELVETICA_12);
+
+    float colorsPanelWpx = 220.0f;
+    float colorsPanelHpx = 80.0f;
+    float colorsPanelW = PrimitiveRenderer::pxToNDCx((int)colorsPanelWpx, width);
+    float colorsPanelH = PrimitiveRenderer::pxToNDCy((int)colorsPanelHpx, height);
+
+    float projectNameRight = centerX2;
+    float cameraLeft = camX1;
+    float colorsX1 = projectNameRight + PrimitiveRenderer::pxToNDCx(10, width);
+    float colorsX2 = colorsX1 + colorsPanelW;
+
+    if (colorsX2 > cameraLeft - PrimitiveRenderer::pxToNDCx(10, width)) {
+        colorsX2 = cameraLeft - PrimitiveRenderer::pxToNDCx(10, width);
+        colorsX1 = colorsX2 - colorsPanelW;
+    }
+
+    float colorsY2 = topBarY2 - PrimitiveRenderer::pxToNDCy(8, height);
+    float colorsY1 = colorsY2 - colorsPanelH;
+
+    PrimitiveRenderer::drawRect(colorsX1, colorsY1, colorsX2, colorsY2, 0.4f, 0.4f, 0.4f);
+    PrimitiveRenderer::drawOutlineRect(colorsX1, colorsY1, colorsX2, colorsY2, 0, 0, 0, 2.0f);
+
+    glColor3f(1, 1, 1);
+    PrimitiveRenderer::drawText("Colors", colorsX1 + 0.02f, colorsY2 - PrimitiveRenderer::pxToNDCy(18, height), GLUT_BITMAP_HELVETICA_12);
+
+    int numColors = 6;
+    float swatchPx = 20.0f;
+    float swatchGapPx = 5.0f;
+    float swatchSize = PrimitiveRenderer::pxToNDCx((int)swatchPx, width);
+    float swatchGap = PrimitiveRenderer::pxToNDCx((int)swatchGapPx, width);
+    float startSwX = colorsX1 + PrimitiveRenderer::pxToNDCx(10, width);
+    float swYTop = colorsY2 - PrimitiveRenderer::pxToNDCy(30, height);
+    float swYBottom = swYTop - swatchSize;
+
+    // Define colors for the buttons
+    struct Color { float r, g, b; };
+    Color colorArr[6] = {{0,0,0}, {1,1,1}, {1,0,0}, {0,1,0}, {0,0,1}, {1,0,1}};
+
+    // Track hover states for color buttons
+    bool colorHovered[6] = {false};
+
+    for (int i = 0; i < numColors; i++) {
+        float sx1 = startSwX + i * (swatchSize + swatchGap);
+        float sx2 = sx1 + swatchSize;
+        bool hover = PrimitiveRenderer::isInsideNDC(appState.mouseX, appState.mouseY, width, height, sx1, swYBottom, sx2, swYTop);
+        colorHovered[i] = hover;
+        float expandPx = hover ? 2.0f : 0.0f;
+        float ex = PrimitiveRenderer::pxToNDCx((int)expandPx, width);
+        PrimitiveRenderer::drawRect(sx1 - ex, swYBottom - ex, sx2 + ex, swYTop + ex, colorArr[i].r, colorArr[i].g, colorArr[i].b);
+        PrimitiveRenderer::drawOutlineRect(sx1 - ex, swYBottom - ex, sx2 + ex, swYTop + ex, 0, 0, 0, 1.0f);
+
+        // Handle color button clicks
+        if (hover && appState.mouseClicked) {
+            handleColorButtonClick(i, appState);
+        }
+    }
+
+    float vBtnPx = 22.0f;
+    float vW = PrimitiveRenderer::pxToNDCx((int)vBtnPx, width);
+    float vX1 = startSwX;
+    float vX2 = vX1 + vW;
+    float vY2 = swYBottom - PrimitiveRenderer::pxToNDCy(5, height);
+    float vY1 = vY2 - PrimitiveRenderer::pxToNDCy((int)vBtnPx, height);
+    bool hoverV = PrimitiveRenderer::isInsideNDC(appState.mouseX, appState.mouseY, width, height, vX1, vY1, vX2, vY2);
+    PrimitiveRenderer::drawRect(vX1, vY1, vX2, vY2, hoverV ? 0.6f : 0.25f, hoverV ? 0.6f : 0.25f, hoverV ? 0.6f : 0.25f);
+    PrimitiveRenderer::drawOutlineRect(vX1, vY1, vX2, vY2, 0, 0, 0, 1.0f);
+    glColor3f(1,1,1);
+    PrimitiveRenderer::drawText("V", vX1 + 0.005f, (vY1 + vY2)*0.5f - 0.01f, GLUT_BITMAP_HELVETICA_12);
+
+    float shadesWpx = 80.0f;
+    float shadesHpx = 22.0f;
+    float shadesW = PrimitiveRenderer::pxToNDCx((int)shadesWpx, width);
+    float shadesH = PrimitiveRenderer::pxToNDCy((int)shadesHpx, height);
+    float shadesX1 = vX2 + PrimitiveRenderer::pxToNDCx(5, width);
+    float shadesX2 = shadesX1 + shadesW;
+    float shadesY2 = vY2;
+    float shadesY1 = vY2 - shadesH;
+    PrimitiveRenderer::drawRect(shadesX1, shadesY1, shadesX2, shadesY2, 0.3f, 0.3f, 0.3f);
+    PrimitiveRenderer::drawOutlineRect(shadesX1, shadesY1, shadesX2, shadesY2, 0, 0, 0, 1.0f);
+    glColor3f(1,1,1);
+    PrimitiveRenderer::drawText("Shades", shadesX1 + 0.01f, (shadesY1 + shadesY2)*0.5f - 0.01f, GLUT_BITMAP_HELVETICA_12);
+}
+
 void Panels::drawTransformPanel(float panelX1, float panelY1, float panelWidth, float panelHeight,
-                                const std::string& title, float values[3],
-                                ApplicationState& state, int width, int height) {
+                               const std::string& title, float values[3],
+                               ApplicationState& state, int width, int height) {
     PrimitiveRenderer::drawRect(panelX1, panelY1, panelX1 + panelWidth, panelY1 + panelHeight, 0.4f, 0.4f, 0.4f);
     PrimitiveRenderer::drawOutlineRect(panelX1, panelY1, panelX1 + panelWidth, panelY1 + panelHeight, 0.0f, 0.0f, 0.0f, 2.0f);
 
@@ -167,14 +400,14 @@ void Panels::drawTransformPanel(float panelX1, float panelY1, float panelWidth, 
     float resetBtnWidth = PrimitiveRenderer::pxToNDCx(60, width);
     float resetBtnHeight = PrimitiveRenderer::pxToNDCy(25, height);
     bool hoverReset = PrimitiveRenderer::isInsideNDC(state.mouseX, state.mouseY, width, height,
-                            panelX1 + PrimitiveRenderer::pxToNDCx(15, width), resetBtnY - resetBtnHeight,
-                            panelX1 + PrimitiveRenderer::pxToNDCx(15, width) + resetBtnWidth, resetBtnY);
+                              panelX1 + PrimitiveRenderer::pxToNDCx(15, width), resetBtnY - resetBtnHeight,
+                              panelX1 + PrimitiveRenderer::pxToNDCx(15, width) + resetBtnWidth, resetBtnY);
 
     PrimitiveRenderer::drawRect(panelX1 + PrimitiveRenderer::pxToNDCx(15, width), resetBtnY - resetBtnHeight,
-                                panelX1 + PrimitiveRenderer::pxToNDCx(15, width) + resetBtnWidth, resetBtnY,
-                                0.32f + (hoverReset ? 0.08f : 0.0f), 0.32f + (hoverReset ? 0.08f : 0.0f), 0.32f + (hoverReset ? 0.08f : 0.0f));
+                              panelX1 + PrimitiveRenderer::pxToNDCx(15, width) + resetBtnWidth, resetBtnY,
+                              0.32f + (hoverReset ? 0.08f : 0.0f), 0.32f + (hoverReset ? 0.08f : 0.0f), 0.32f + (hoverReset ? 0.08f : 0.0f));
     PrimitiveRenderer::drawOutlineRect(panelX1 + PrimitiveRenderer::pxToNDCx(15, width), resetBtnY - resetBtnHeight,
-                                        panelX1 + PrimitiveRenderer::pxToNDCx(15, width) + resetBtnWidth, resetBtnY, 0,0,0,1.0f);
+                                     panelX1 + PrimitiveRenderer::pxToNDCx(15, width) + resetBtnWidth, resetBtnY, 0,0,0,1.0f);
 
     glColor3f(1,1,1);
     PrimitiveRenderer::drawText("Reset", panelX1 + PrimitiveRenderer::pxToNDCx(25, width), resetBtnY - PrimitiveRenderer::pxToNDCy(15, height), GLUT_BITMAP_HELVETICA_12);
@@ -208,7 +441,7 @@ void Panels::drawTransformPanel(float panelX1, float panelY1, float panelWidth, 
 
 
 void Panels::drawShapesPanel(float panelX1, float panelY1, float panelWidth, float panelHeight,
-                             ApplicationState& state, int width, int height) {
+                            ApplicationState& state, int width, int height) {
     int panelXPx = (int)((panelX1 + 1.0f) * 0.5f * width);
     int panelYPx = (int)((1.0f - (panelY1 + panelHeight)) * 0.5f * height);
     int panelWidthPx = (int)(panelWidth * 0.5f * width);
@@ -242,9 +475,9 @@ void Panels::drawShapesPanel(float panelX1, float panelY1, float panelWidth, flo
     bool isCubeSelected = (state.currentShape == ShapeType::CUBE);
 
     PrimitiveRenderer::drawRect(cubeX1, row1Y - buttonHeight, cubeX2, row1Y,
-            isCubeSelected ? 0.5f : (0.3f + (hoverCube ? 0.1f : 0.0f)),
-            isCubeSelected ? 0.5f : (0.3f + (hoverCube ? 0.1f : 0.0f)),
-            isCubeSelected ? 0.5f : (0.3f + (hoverCube ? 0.1f : 0.0f)));
+                              isCubeSelected ? 0.5f : (0.3f + (hoverCube ? 0.1f : 0.0f)),
+                              isCubeSelected ? 0.5f : (0.3f + (hoverCube ? 0.1f : 0.0f)),
+                              isCubeSelected ? 0.5f : (0.3f + (hoverCube ? 0.1f : 0.0f)));
     PrimitiveRenderer::drawOutlineRect(cubeX1, row1Y - buttonHeight, cubeX2, row1Y, 0.0f, 0.0f, 0.0f, 1.5f);
 
     // Draw 3D cube symbol
@@ -295,9 +528,9 @@ void Panels::drawShapesPanel(float panelX1, float panelY1, float panelWidth, flo
     bool isSphereSelected = (state.currentShape == ShapeType::SPHERE);
 
     PrimitiveRenderer::drawRect(sphereX1, row1Y - buttonHeight, sphereX2, row1Y,
-            isSphereSelected ? 0.5f : (0.3f + (hoverSphere ? 0.1f : 0.0f)),
-            isSphereSelected ? 0.5f : (0.3f + (hoverSphere ? 0.1f : 0.0f)),
-            isSphereSelected ? 0.5f : (0.3f + (hoverSphere ? 0.1f : 0.0f)));
+                              isSphereSelected ? 0.5f : (0.3f + (hoverSphere ? 0.1f : 0.0f)),
+                              isSphereSelected ? 0.5f : (0.3f + (hoverSphere ? 0.1f : 0.0f)),
+                              isSphereSelected ? 0.5f : (0.3f + (hoverSphere ? 0.1f : 0.0f)));
     PrimitiveRenderer::drawOutlineRect(sphereX1, row1Y - buttonHeight, sphereX2, row1Y, 0.0f, 0.0f, 0.0f, 1.5f);
 
     // Draw 3D sphere symbol
@@ -348,9 +581,9 @@ void Panels::drawShapesPanel(float panelX1, float panelY1, float panelWidth, flo
     bool isConeSelected = (state.currentShape == ShapeType::CONE);
 
     PrimitiveRenderer::drawRect(coneX1, row2Y - buttonHeight, coneX2, row2Y,
-            isConeSelected ? 0.5f : (0.3f + (hoverCone ? 0.1f : 0.0f)),
-            isConeSelected ? 0.5f : (0.3f + (hoverCone ? 0.1f : 0.0f)),
-            isConeSelected ? 0.5f : (0.3f + (hoverCone ? 0.1f : 0.0f)));
+                              isConeSelected ? 0.5f : (0.3f + (hoverCone ? 0.1f : 0.0f)),
+                              isConeSelected ? 0.5f : (0.3f + (hoverCone ? 0.1f : 0.0f)),
+                              isConeSelected ? 0.5f : (0.3f + (hoverCone ? 0.1f : 0.0f)));
     PrimitiveRenderer::drawOutlineRect(coneX1, row2Y - buttonHeight, coneX2, row2Y, 0.0f, 0.0f, 0.0f, 1.5f);
 
     // Draw 3D cone symbol
@@ -397,9 +630,9 @@ void Panels::drawShapesPanel(float panelX1, float panelY1, float panelWidth, flo
     bool isCylinderSelected = (state.currentShape == ShapeType::CYLINDER);
 
     PrimitiveRenderer::drawRect(cylinderX1, row2Y - buttonHeight, cylinderX2, row2Y,
-            isCylinderSelected ? 0.5f : (0.3f + (hoverCylinder ? 0.1f : 0.0f)),
-            isCylinderSelected ? 0.5f : (0.3f + (hoverCylinder ? 0.1f : 0.0f)),
-            isCylinderSelected ? 0.5f : (0.3f + (hoverCylinder ? 0.1f : 0.0f)));
+                              isCylinderSelected ? 0.5f : (0.3f + (hoverCylinder ? 0.1f : 0.0f)),
+                              isCylinderSelected ? 0.5f : (0.3f + (hoverCylinder ? 0.1f : 0.0f)),
+                              isCylinderSelected ? 0.5f : (0.3f + (hoverCylinder ? 0.1f : 0.0f)));
     PrimitiveRenderer::drawOutlineRect(cylinderX1, row2Y - buttonHeight, cylinderX2, row2Y, 0.0f, 0.0f, 0.0f, 1.5f);
 
     // Draw 3D cylinder symbol
@@ -455,9 +688,9 @@ void Panels::drawShapesPanel(float panelX1, float panelY1, float panelWidth, flo
     bool isTorusSelected = (state.currentShape == ShapeType::TORUS);
 
     PrimitiveRenderer::drawRect(torusX1, row3Y - buttonHeight, torusX2, row3Y,
-            isTorusSelected ? 0.5f : (0.3f + (hoverTorus ? 0.1f : 0.0f)),
-            isTorusSelected ? 0.5f : (0.3f + (hoverTorus ? 0.1f : 0.0f)),
-            isTorusSelected ? 0.5f : (0.3f + (hoverTorus ? 0.1f : 0.0f)));
+                              isTorusSelected ? 0.5f : (0.3f + (hoverTorus ? 0.1f : 0.0f)),
+                              isTorusSelected ? 0.5f : (0.3f + (hoverTorus ? 0.1f : 0.0f)),
+                              isTorusSelected ? 0.5f : (0.3f + (hoverTorus ? 0.1f : 0.0f)));
     PrimitiveRenderer::drawOutlineRect(torusX1, row3Y - buttonHeight, torusX2, row3Y, 0.0f, 0.0f, 0.0f, 1.5f);
 
     // Draw 3D torus symbol
@@ -504,9 +737,9 @@ void Panels::drawShapesPanel(float panelX1, float panelY1, float panelWidth, flo
     bool isPyramidSelected = (state.currentShape == ShapeType::PYRAMID);
 
     PrimitiveRenderer::drawRect(pyramidX1, row3Y - buttonHeight, pyramidX2, row3Y,
-            isPyramidSelected ? 0.5f : (0.3f + (hoverPyramid ? 0.1f : 0.0f)),
-            isPyramidSelected ? 0.5f : (0.3f + (hoverPyramid ? 0.1f : 0.0f)),
-            isPyramidSelected ? 0.5f : (0.3f + (hoverPyramid ? 0.1f : 0.0f)));
+                              isPyramidSelected ? 0.5f : (0.3f + (hoverPyramid ? 0.1f : 0.0f)),
+                              isPyramidSelected ? 0.5f : (0.3f + (hoverPyramid ? 0.1f : 0.0f)),
+                              isPyramidSelected ? 0.5f : (0.3f + (hoverPyramid ? 0.1f : 0.0f)));
     PrimitiveRenderer::drawOutlineRect(pyramidX1, row3Y - buttonHeight, pyramidX2, row3Y, 0.0f, 0.0f, 0.0f, 1.5f);
 
     // Draw 3D pyramid symbol
@@ -578,7 +811,7 @@ void Panels::drawShapesPanel(float panelX1, float panelY1, float panelWidth, flo
 }
 
 void Panels::drawTexturesPanel(float panelX1, float panelY1, float panelWidth, float panelHeight,
-                               ApplicationState& state, int width, int height) {
+                              ApplicationState& state, int width, int height) {
     int panelXPx = (int)((panelX1 + 1.0f) * 0.5f * width);
     int panelYPx = (int)((1.0f - (panelY1 + panelHeight)) * 0.5f * height);
     int panelWidthPx = (int)(panelWidth * 0.5f * width);

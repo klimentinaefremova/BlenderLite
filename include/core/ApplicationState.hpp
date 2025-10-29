@@ -47,6 +47,9 @@ struct ApplicationState {
 
     // Shape selection
     ShapeType currentShape = ShapeType::NONE;
+
+    // New field for current shape color
+    float currentColor[3] = {0.8f, 0.8f, 0.8f}; // Default light gray
 };
 
 #endif

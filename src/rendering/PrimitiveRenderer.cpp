@@ -41,12 +41,12 @@ void PrimitiveRenderer::drawText(const std::string &text, float x, float y, void
     }
 }
 
-float PrimitiveRenderer::pxToNDCx(int px, int width) { 
-    return 2.0f * px / (float)width; 
+float PrimitiveRenderer::pxToNDCx(int px, int width) {
+    return 2.0f * px / (float)width;
 }
 
-float PrimitiveRenderer::pxToNDCy(int px, int height) { 
-    return 2.0f * px / (float)height; 
+float PrimitiveRenderer::pxToNDCy(int px, int height) {
+    return 2.0f * px / (float)height;
 }
 
 void PrimitiveRenderer::mouseToNDC(double mx, double my, int width, int height, float &ndcX, float &ndcY) {

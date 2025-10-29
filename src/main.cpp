@@ -16,47 +16,47 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void handleTextInput(GLFWwindow* window, int key, int scancode, int action, int mods);
 void handleCharacterInput(GLFWwindow* window, unsigned int codepoint);
 
-// Enhanced 3D shape drawing functions with proper shading
-void drawCube() {
+// Enhanced 3D shape drawing functions with proper shading using current color
+void drawCube(ApplicationState& appState) {
     glBegin(GL_QUADS);
 
-    // Front face (lightest gray)
-    glColor3f(0.8f, 0.8f, 0.8f);
+    // Front face (lightest)
+    glColor3f(appState.currentColor[0] * 1.0f, appState.currentColor[1] * 1.0f, appState.currentColor[2] * 1.0f);
     glVertex3f(-0.5f, -0.5f, 0.5f);
     glVertex3f(0.5f, -0.5f, 0.5f);
     glVertex3f(0.5f, 0.5f, 0.5f);
     glVertex3f(-0.5f, 0.5f, 0.5f);
 
-    // Back face (darkest gray)
-    glColor3f(0.4f, 0.4f, 0.4f);
+    // Back face (darkest)
+    glColor3f(appState.currentColor[0] * 0.5f, appState.currentColor[1] * 0.5f, appState.currentColor[2] * 0.5f);
     glVertex3f(-0.5f, -0.5f, -0.5f);
     glVertex3f(-0.5f, 0.5f, -0.5f);
     glVertex3f(0.5f, 0.5f, -0.5f);
     glVertex3f(0.5f, -0.5f, -0.5f);
 
-    // Top face (light gray)
-    glColor3f(0.7f, 0.7f, 0.7f);
+    // Top face (light)
+    glColor3f(appState.currentColor[0] * 0.9f, appState.currentColor[1] * 0.9f, appState.currentColor[2] * 0.9f);
     glVertex3f(-0.5f, 0.5f, -0.5f);
     glVertex3f(-0.5f, 0.5f, 0.5f);
     glVertex3f(0.5f, 0.5f, 0.5f);
     glVertex3f(0.5f, 0.5f, -0.5f);
 
-    // Bottom face (dark gray)
-    glColor3f(0.5f, 0.5f, 0.5f);
+    // Bottom face (dark)
+    glColor3f(appState.currentColor[0] * 0.6f, appState.currentColor[1] * 0.6f, appState.currentColor[2] * 0.6f);
     glVertex3f(-0.5f, -0.5f, -0.5f);
     glVertex3f(0.5f, -0.5f, -0.5f);
     glVertex3f(0.5f, -0.5f, 0.5f);
     glVertex3f(-0.5f, -0.5f, 0.5f);
 
-    // Right face (medium-light gray)
-    glColor3f(0.65f, 0.65f, 0.65f);
+    // Right face (medium-light)
+    glColor3f(appState.currentColor[0] * 0.8f, appState.currentColor[1] * 0.8f, appState.currentColor[2] * 0.8f);
     glVertex3f(0.5f, -0.5f, -0.5f);
     glVertex3f(0.5f, 0.5f, -0.5f);
     glVertex3f(0.5f, 0.5f, 0.5f);
     glVertex3f(0.5f, -0.5f, 0.5f);
 
-    // Left face (medium-dark gray)
-    glColor3f(0.55f, 0.55f, 0.55f);
+    // Left face (medium-dark)
+    glColor3f(appState.currentColor[0] * 0.7f, appState.currentColor[1] * 0.7f, appState.currentColor[2] * 0.7f);
     glVertex3f(-0.5f, -0.5f, -0.5f);
     glVertex3f(-0.5f, -0.5f, 0.5f);
     glVertex3f(-0.5f, 0.5f, 0.5f);
@@ -65,7 +65,7 @@ void drawCube() {
     glEnd();
 }
 
-void drawSphere(float radius, int slices, int stacks) {
+void drawSphere(float radius, int slices, int stacks, ApplicationState& appState) {
     for (int i = 0; i <= stacks; ++i) {
         float phi = Constants::PI * i / stacks;
         glBegin(GL_QUAD_STRIP);
@@ -77,7 +77,7 @@ void drawSphere(float radius, int slices, int stacks) {
 
             // Vary color based on vertical position for realistic shading
             float shade = 0.5f + y * 0.3f;
-            glColor3f(shade, shade, shade);
+            glColor3f(appState.currentColor[0] * shade, appState.currentColor[1] * shade, appState.currentColor[2] * shade);
             glVertex3f(x, y, z);
 
             x = radius * sin(phi + Constants::PI / stacks) * cos(theta);
@@ -85,17 +85,17 @@ void drawSphere(float radius, int slices, int stacks) {
             z = radius * sin(phi + Constants::PI / stacks) * sin(theta);
 
             shade = 0.5f + y * 0.3f;
-            glColor3f(shade, shade, shade);
+            glColor3f(appState.currentColor[0] * shade, appState.currentColor[1] * shade, appState.currentColor[2] * shade);
             glVertex3f(x, y, z);
         }
         glEnd();
     }
 }
 
-void drawCone(float base, float height, int slices) {
-    // Base (dark gray)
+void drawCone(float base, float height, int slices, ApplicationState& appState) {
+    // Base (dark)
     glBegin(GL_TRIANGLE_FAN);
-    glColor3f(0.4f, 0.4f, 0.4f);
+    glColor3f(appState.currentColor[0] * 0.5f, appState.currentColor[1] * 0.5f, appState.currentColor[2] * 0.5f);
     glVertex3f(0.0f, -height/2, 0.0f);
     for (int i = 0; i <= slices; ++i) {
         float theta = 2.0f * Constants::PI * i / slices;
@@ -107,6 +107,7 @@ void drawCone(float base, float height, int slices) {
 
     // Side with gradient shading
     glBegin(GL_TRIANGLE_FAN);
+    glColor3f(appState.currentColor[0] * 1.0f, appState.currentColor[1] * 1.0f, appState.currentColor[2] * 1.0f);
     glVertex3f(0.0f, height/2, 0.0f);
     for (int i = 0; i <= slices; ++i) {
         float theta = 2.0f * Constants::PI * i / slices;
@@ -115,16 +116,16 @@ void drawCone(float base, float height, int slices) {
 
         // Vary color based on angle for 3D effect
         float shade = 0.6f - fabs(sin(theta)) * 0.2f;
-        glColor3f(shade, shade, shade);
+        glColor3f(appState.currentColor[0] * shade, appState.currentColor[1] * shade, appState.currentColor[2] * shade);
         glVertex3f(x, -height/2, z);
     }
     glEnd();
 }
 
-void drawCylinder(float radius, float height, int slices) {
-    // Top (light gray)
+void drawCylinder(float radius, float height, int slices, ApplicationState& appState) {
+    // Top (light)
     glBegin(GL_TRIANGLE_FAN);
-    glColor3f(0.8f, 0.8f, 0.8f);
+    glColor3f(appState.currentColor[0] * 1.0f, appState.currentColor[1] * 1.0f, appState.currentColor[2] * 1.0f);
     glVertex3f(0.0f, height/2, 0.0f);
     for (int i = 0; i <= slices; ++i) {
         float theta = 2.0f * Constants::PI * i / slices;
@@ -134,9 +135,9 @@ void drawCylinder(float radius, float height, int slices) {
     }
     glEnd();
 
-    // Bottom (dark gray)
+    // Bottom (dark)
     glBegin(GL_TRIANGLE_FAN);
-    glColor3f(0.4f, 0.4f, 0.4f);
+    glColor3f(appState.currentColor[0] * 0.5f, appState.currentColor[1] * 0.5f, appState.currentColor[2] * 0.5f);
     glVertex3f(0.0f, -height/2, 0.0f);
     for (int i = 0; i <= slices; ++i) {
         float theta = 2.0f * Constants::PI * i / slices;
@@ -146,9 +147,9 @@ void drawCylinder(float radius, float height, int slices) {
     }
     glEnd();
 
-    // Side with consistent medium gray
+    // Side with consistent medium color
     glBegin(GL_QUAD_STRIP);
-    glColor3f(0.6f, 0.6f, 0.6f);
+    glColor3f(appState.currentColor[0] * 0.75f, appState.currentColor[1] * 0.75f, appState.currentColor[2] * 0.75f);
     for (int i = 0; i <= slices; ++i) {
         float theta = 2.0f * Constants::PI * i / slices;
         float x = radius * cos(theta);
@@ -159,7 +160,7 @@ void drawCylinder(float radius, float height, int slices) {
     glEnd();
 }
 
-void drawTorus(float majorRadius, float minorRadius, int majorSlices, int minorSlices) {
+void drawTorus(float majorRadius, float minorRadius, int majorSlices, int minorSlices, ApplicationState& appState) {
     for (int i = 0; i < majorSlices; ++i) {
         glBegin(GL_QUAD_STRIP);
         for (int j = 0; j <= minorSlices; ++j) {
@@ -173,7 +174,7 @@ void drawTorus(float majorRadius, float minorRadius, int majorSlices, int minorS
 
                 // Vary color based on minor circle position
                 float shade = 0.5f + cos(theta) * 0.3f;
-                glColor3f(shade, shade, shade);
+                glColor3f(appState.currentColor[0] * shade, appState.currentColor[1] * shade, appState.currentColor[2] * shade);
                 glVertex3f(x, y, z);
             }
         }
@@ -181,43 +182,43 @@ void drawTorus(float majorRadius, float minorRadius, int majorSlices, int minorS
     }
 }
 
-void drawPyramid(float base, float height) {
-    // Base (dark gray)
+void drawPyramid(float base, float height, ApplicationState& appState) {
+    // Base (dark)
     glBegin(GL_QUADS);
-    glColor3f(0.4f, 0.4f, 0.4f);
+    glColor3f(appState.currentColor[0] * 0.5f, appState.currentColor[1] * 0.5f, appState.currentColor[2] * 0.5f);
     glVertex3f(-base/2, -height/2, -base/2);
     glVertex3f(base/2, -height/2, -base/2);
     glVertex3f(base/2, -height/2, base/2);
     glVertex3f(-base/2, -height/2, base/2);
     glEnd();
 
-    // Front face (medium-light gray)
+    // Front face (medium-light)
     glBegin(GL_TRIANGLES);
-    glColor3f(0.7f, 0.7f, 0.7f);
+    glColor3f(appState.currentColor[0] * 0.9f, appState.currentColor[1] * 0.9f, appState.currentColor[2] * 0.9f);
     glVertex3f(-base/2, -height/2, base/2);
     glVertex3f(base/2, -height/2, base/2);
     glVertex3f(0.0f, height/2, 0.0f);
     glEnd();
 
-    // Right face (light gray)
+    // Right face (light)
     glBegin(GL_TRIANGLES);
-    glColor3f(0.8f, 0.8f, 0.8f);
+    glColor3f(appState.currentColor[0] * 1.0f, appState.currentColor[1] * 1.0f, appState.currentColor[2] * 1.0f);
     glVertex3f(base/2, -height/2, base/2);
     glVertex3f(base/2, -height/2, -base/2);
     glVertex3f(0.0f, height/2, 0.0f);
     glEnd();
 
-    // Back face (medium-dark gray)
+    // Back face (medium-dark)
     glBegin(GL_TRIANGLES);
-    glColor3f(0.5f, 0.5f, 0.5f);
+    glColor3f(appState.currentColor[0] * 0.7f, appState.currentColor[1] * 0.7f, appState.currentColor[2] * 0.7f);
     glVertex3f(base/2, -height/2, -base/2);
     glVertex3f(-base/2, -height/2, -base/2);
     glVertex3f(0.0f, height/2, 0.0f);
     glEnd();
 
-    // Left face (medium gray)
+    // Left face (medium)
     glBegin(GL_TRIANGLES);
-    glColor3f(0.6f, 0.6f, 0.6f);
+    glColor3f(appState.currentColor[0] * 0.8f, appState.currentColor[1] * 0.8f, appState.currentColor[2] * 0.8f);
     glVertex3f(-base/2, -height/2, -base/2);
     glVertex3f(-base/2, -height/2, base/2);
     glVertex3f(0.0f, height/2, 0.0f);
@@ -319,22 +320,22 @@ void drawCurrentShape(ApplicationState& appState) {
     // Draw the selected shape
     switch (appState.currentShape) {
         case ShapeType::CUBE:
-            drawCube();
+            drawCube(appState);
             break;
         case ShapeType::SPHERE:
-            drawSphere(0.5f, 20, 20);
+            drawSphere(0.5f, 20, 20, appState);
             break;
         case ShapeType::CONE:
-            drawCone(0.5f, 1.0f, 20);
+            drawCone(0.5f, 1.0f, 20, appState);
             break;
         case ShapeType::CYLINDER:
-            drawCylinder(0.5f, 1.0f, 20);
+            drawCylinder(0.5f, 1.0f, 20, appState);
             break;
         case ShapeType::TORUS:
-            drawTorus(0.5f, 0.2f, 20, 10);
+            drawTorus(0.5f, 0.2f, 20, 10, appState);
             break;
         case ShapeType::PYRAMID:
-            drawPyramid(1.0f, 1.0f);
+            drawPyramid(1.0f, 1.0f, appState);
             break;
         default:
             break;
@@ -631,190 +632,6 @@ void checkShapeButtonClicks(double xpos, double ypos, int width, int height, App
     }
 }
 
-void drawTopBarUI(int width, int height) {
-    float marginPx = 10.0f;
-    float marginX = PrimitiveRenderer::pxToNDCx((int)marginPx, width);
-    float topBarY2 = 1.0f;
-
-    float blenderWpx = 120.0f;
-    float blenderHpx = 48.0f;
-    float blenderX1 = -1.0f + marginX;
-    float blenderX2 = blenderX1 + PrimitiveRenderer::pxToNDCx((int)blenderWpx, width);
-    float blenderH = PrimitiveRenderer::pxToNDCy((int)blenderHpx, height);
-    float blenderY2 = topBarY2 - PrimitiveRenderer::pxToNDCy(8, height);
-    float blenderY1 = blenderY2 - blenderH;
-
-    PrimitiveRenderer::drawRect(blenderX1, blenderY1, blenderX2, blenderY2, 0.38f, 0.38f, 0.38f);
-    PrimitiveRenderer::drawOutlineRect(blenderX1, blenderY1, blenderX2, blenderY2, 0.0f, 0.0f, 0.0f, 2.0f);
-
-    glColor3f(1.0f, 0.0f, 0.0f);
-    float textX = (blenderX1 + blenderX2) * 0.5f - 0.06f;
-    float textY = (blenderY1 + blenderY2) * 0.5f - 0.01f;
-    PrimitiveRenderer::drawText("Blender Lite", textX, textY, GLUT_BITMAP_HELVETICA_18);
-
-    float groupX1 = blenderX2 + marginX;
-    float groupX2 = groupX1 + PrimitiveRenderer::pxToNDCx((int)(140), width);
-
-    float buttonHpx = 28.0f;
-    float saveH = PrimitiveRenderer::pxToNDCy((int)buttonHpx, height);
-    float gapV = PrimitiveRenderer::pxToNDCy(6, height);
-    float save1Y2 = blenderY2;
-    float save1Y1 = save1Y2 - saveH;
-    float save2Y2 = save1Y1 - gapV;
-    float save2Y1 = save2Y2 - saveH;
-
-    bool hoverSave = PrimitiveRenderer::isInsideNDC(appState.mouseX, appState.mouseY, width, height, groupX1, save1Y1, groupX2, save1Y2);
-    PrimitiveRenderer::drawRect(groupX1, save1Y1, groupX2, save1Y2, 0.32f + (hoverSave ? 0.08f : 0.0f), 0.32f + (hoverSave ? 0.08f : 0.0f), 0.32f + (hoverSave ? 0.08f : 0.0f));
-    PrimitiveRenderer::drawOutlineRect(groupX1, save1Y1, groupX2, save1Y2, 0,0,0,1.5f);
-    glColor3f(1,1,1);
-    PrimitiveRenderer::drawText("Save", groupX1 + 0.02f, (save1Y1 + save1Y2) * 0.5f - 0.01f, GLUT_BITMAP_HELVETICA_18);
-
-    bool hoverSaveAs = PrimitiveRenderer::isInsideNDC(appState.mouseX, appState.mouseY, width, height, groupX1, save2Y1, groupX2, save2Y2);
-    PrimitiveRenderer::drawRect(groupX1, save2Y1, groupX2, save2Y2, 0.32f + (hoverSaveAs ? 0.08f : 0.0f), 0.32f + (hoverSaveAs ? 0.08f : 0.0f), 0.32f + (hoverSaveAs ? 0.08f : 0.0f));
-    PrimitiveRenderer::drawOutlineRect(groupX1, save2Y1, groupX2, save2Y2, 0,0,0,1.5f);
-    glColor3f(1,1,1);
-    PrimitiveRenderer::drawText("Save as", groupX1 + 0.01f, (save2Y1 + save2Y2)*0.5f - 0.01f, GLUT_BITMAP_HELVETICA_18);
-
-    float underY2 = save2Y1 - gapV - 0.0f;
-    float underH = saveH;
-    float underY1 = underY2 - underH;
-    float halfW = (groupX2 - groupX1 - marginX) * 0.5f;
-    float undoX1 = groupX1;
-    float undoX2 = groupX1 + halfW - marginX*0.5f;
-    float redoX1 = undoX2 + marginX*0.5f;
-    float redoX2 = groupX2;
-    bool hoverUndo = PrimitiveRenderer::isInsideNDC(appState.mouseX, appState.mouseY, width, height, undoX1, underY1, undoX2, underY2);
-    bool hoverRedo = PrimitiveRenderer::isInsideNDC(appState.mouseX, appState.mouseY, width, height, redoX1, underY1, redoX2, underY2);
-
-    PrimitiveRenderer::drawRect(undoX1, underY1, undoX2, underY2, 0.32f + (hoverUndo ? 0.08f : 0.0f), 0.32f + (hoverUndo ? 0.08f : 0.0f), 0.32f + (hoverUndo ? 0.08f : 0.0f));
-    PrimitiveRenderer::drawOutlineRect(undoX1, underY1, undoX2, underY2, 0,0,0,1.0f);
-    glColor3f(1,1,1);
-    PrimitiveRenderer::drawText("Undo", undoX1 + 0.01f, (underY1 + underY2)*0.5f - 0.01f, GLUT_BITMAP_HELVETICA_18);
-
-    PrimitiveRenderer::drawRect(redoX1, underY1, redoX2, underY2, 0.32f + (hoverRedo ? 0.08f : 0.0f), 0.32f + (hoverRedo ? 0.08f : 0.0f), 0.32f + (hoverRedo ? 0.08f : 0.0f));
-    PrimitiveRenderer::drawOutlineRect(redoX1, underY1, redoX2, underY2, 0,0,0,1.0f);
-    glColor3f(1,1,1);
-    PrimitiveRenderer::drawText("Redo", redoX1 + 0.01f, (underY1 + underY2)*0.5f - 0.01f, GLUT_BITMAP_HELVETICA_18);
-
-    float centerWpx = 300.0f;
-    float centerX1 = -PrimitiveRenderer::pxToNDCx((int)(centerWpx/2), width);
-    float centerX2 = PrimitiveRenderer::pxToNDCx((int)(centerWpx/2), width);
-
-    float pnameHpx = 20.0f;
-    float pnameH = PrimitiveRenderer::pxToNDCy((int)pnameHpx, height);
-    float pnameY2 = blenderY2;
-    float pnameY1 = pnameY2 - pnameH - PrimitiveRenderer::pxToNDCy(6, height);
-    PrimitiveRenderer::drawRect(centerX1, pnameY1, centerX2, pnameY2, 0.9f, 0.9f, 0.9f);
-    PrimitiveRenderer::drawOutlineRect(centerX1, pnameY1, centerX2, pnameY2, 0,0,0,1.0f);
-    glColor3f(0.2f,0.2f,0.2f);
-    PrimitiveRenderer::drawText("Project Name", centerX1 + 0.03f, (pnameY1 + pnameY2)*0.5f - 0.01f, GLUT_BITMAP_HELVETICA_18);
-
-    float npWpx = 150.0f;
-    float npX1 = -PrimitiveRenderer::pxToNDCx((int)(npWpx/2), width);
-    float npX2 = PrimitiveRenderer::pxToNDCx((int)(npWpx/2), width);
-    float npH = PrimitiveRenderer::pxToNDCy((int)buttonHpx, height);
-    float npY2 = pnameY1 - PrimitiveRenderer::pxToNDCy(8, height);
-    float npY1 = npY2 - npH;
-    bool hoverNewProj = PrimitiveRenderer::isInsideNDC(appState.mouseX, appState.mouseY, width, height, npX1, npY1, npX2, npY2);
-    PrimitiveRenderer::drawRect(npX1, npY1, npX2, npY2, 0.32f + (hoverNewProj ? 0.08f : 0.0f), 0.32f + (hoverNewProj ? 0.08f : 0.0f), 0.32f + (hoverNewProj ? 0.08f : 0.0f));
-    PrimitiveRenderer::drawOutlineRect(npX1, npY1, npX2, npY2, 0,0,0,1.0f);
-    glColor3f(1,1,1);
-    PrimitiveRenderer::drawText("New Project", npX1 + 0.01f, (npY1 + npY2)*0.5f - 0.01f, GLUT_BITMAP_HELVETICA_18);
-
-    float camSizePx = 48.0f;
-    float camSize = PrimitiveRenderer::pxToNDCx((int)camSizePx, width);
-    float camX2 = 1.0f - PrimitiveRenderer::pxToNDCx(50, width);
-    float camX1 = camX2 - camSize;
-    float camY2 = blenderY2;
-    float camY1 = camY2 - PrimitiveRenderer::pxToNDCy((int)camSizePx, height);
-    bool hoverCam = PrimitiveRenderer::isInsideNDC(appState.mouseX, appState.mouseY, width, height, camX1, camY1, camX2, camY2);
-    float camExpandPx = hoverCam ? 6.0f : 0.0f;
-    float camEx = PrimitiveRenderer::pxToNDCx((int)camExpandPx, width);
-
-    PrimitiveRenderer::drawRect(camX1 - camEx, camY1 - camEx, camX2 + camEx, camY2 + camEx, 0.3f, 0.3f, 0.3f);
-    PrimitiveRenderer::drawOutlineRect(camX1 - camEx, camY1 - camEx, camX2 + camEx, camY2 + camEx, 0,0,0,1.0f);
-
-    float camCx = (camX1 + camX2) * 0.5f;
-    float camCy = (camY1 + camY2) * 0.5f;
-    PrimitiveRenderer::drawCircle(camCx, camCy, std::min(camSize, PrimitiveRenderer::pxToNDCy((int)camSizePx, height)) * 0.25f + (hoverCam ? camEx*0.5f : 0.0f), 30, 0.12f, 0.12f, 0.12f);
-
-    glColor3f(1,1,1);
-    float textLine1Y = camY1 - PrimitiveRenderer::pxToNDCy(14, height);
-    float textLine2Y = textLine1Y - PrimitiveRenderer::pxToNDCy(22, height);
-    PrimitiveRenderer::drawText("Take a", camCx - 0.05f, textLine1Y, GLUT_BITMAP_HELVETICA_12);
-    PrimitiveRenderer::drawText("Screenshot", camCx - 0.09f, textLine2Y, GLUT_BITMAP_HELVETICA_12);
-
-    float colorsPanelWpx = 220.0f;
-    float colorsPanelHpx = 80.0f;
-    float colorsPanelW = PrimitiveRenderer::pxToNDCx((int)colorsPanelWpx, width);
-    float colorsPanelH = PrimitiveRenderer::pxToNDCy((int)colorsPanelHpx, height);
-
-    float projectNameRight = centerX2;
-    float cameraLeft = camX1;
-    float colorsX1 = projectNameRight + PrimitiveRenderer::pxToNDCx(10, width);
-    float colorsX2 = colorsX1 + colorsPanelW;
-
-    if (colorsX2 > cameraLeft - PrimitiveRenderer::pxToNDCx(10, width)) {
-        colorsX2 = cameraLeft - PrimitiveRenderer::pxToNDCx(10, width);
-        colorsX1 = colorsX2 - colorsPanelW;
-    }
-
-    float colorsY2 = topBarY2 - PrimitiveRenderer::pxToNDCy(8, height);
-    float colorsY1 = colorsY2 - colorsPanelH;
-
-    PrimitiveRenderer::drawRect(colorsX1, colorsY1, colorsX2, colorsY2, 0.4f, 0.4f, 0.4f);
-    PrimitiveRenderer::drawOutlineRect(colorsX1, colorsY1, colorsX2, colorsY2, 0, 0, 0, 2.0f);
-
-    glColor3f(1, 1, 1);
-    PrimitiveRenderer::drawText("Colors", colorsX1 + 0.02f, colorsY2 - PrimitiveRenderer::pxToNDCy(18, height), GLUT_BITMAP_HELVETICA_12);
-
-    int numColors = 6;
-    float swatchPx = 20.0f;
-    float swatchGapPx = 5.0f;
-    float swatchSize = PrimitiveRenderer::pxToNDCx((int)swatchPx, width);
-    float swatchGap = PrimitiveRenderer::pxToNDCx((int)swatchGapPx, width);
-    float startSwX = colorsX1 + PrimitiveRenderer::pxToNDCx(10, width);
-    float swYTop = colorsY2 - PrimitiveRenderer::pxToNDCy(30, height);
-    float swYBottom = swYTop - swatchSize;
-
-    struct Color { float r, g, b; };
-    Color colorArr[6] = {{0,0,0}, {1,1,1}, {1,0,0}, {0,1,0}, {0,0,1}, {1,0,1}};
-    for (int i = 0; i < numColors; i++) {
-        float sx1 = startSwX + i * (swatchSize + swatchGap);
-        float sx2 = sx1 + swatchSize;
-        bool hover = PrimitiveRenderer::isInsideNDC(appState.mouseX, appState.mouseY, width, height, sx1, swYBottom, sx2, swYTop);
-        float expandPx = hover ? 2.0f : 0.0f;
-        float ex = PrimitiveRenderer::pxToNDCx((int)expandPx, width);
-        PrimitiveRenderer::drawRect(sx1 - ex, swYBottom - ex, sx2 + ex, swYTop + ex, colorArr[i].r, colorArr[i].g, colorArr[i].b);
-        PrimitiveRenderer::drawOutlineRect(sx1 - ex, swYBottom - ex, sx2 + ex, swYTop + ex, 0, 0, 0, 1.0f);
-    }
-
-    float vBtnPx = 22.0f;
-    float vW = PrimitiveRenderer::pxToNDCx((int)vBtnPx, width);
-    float vX1 = startSwX;
-    float vX2 = vX1 + vW;
-    float vY2 = swYBottom - PrimitiveRenderer::pxToNDCy(5, height);
-    float vY1 = vY2 - PrimitiveRenderer::pxToNDCy((int)vBtnPx, height);
-    bool hoverV = PrimitiveRenderer::isInsideNDC(appState.mouseX, appState.mouseY, width, height, vX1, vY1, vX2, vY2);
-    PrimitiveRenderer::drawRect(vX1, vY1, vX2, vY2, hoverV ? 0.6f : 0.25f, hoverV ? 0.6f : 0.25f, hoverV ? 0.6f : 0.25f);
-    PrimitiveRenderer::drawOutlineRect(vX1, vY1, vX2, vY2, 0, 0, 0, 1.0f);
-    glColor3f(1,1,1);
-    PrimitiveRenderer::drawText("V", vX1 + 0.005f, (vY1 + vY2)*0.5f - 0.01f, GLUT_BITMAP_HELVETICA_12);
-
-    float shadesWpx = 80.0f;
-    float shadesHpx = 22.0f;
-    float shadesW = PrimitiveRenderer::pxToNDCx((int)shadesWpx, width);
-    float shadesH = PrimitiveRenderer::pxToNDCy((int)shadesHpx, height);
-    float shadesX1 = vX2 + PrimitiveRenderer::pxToNDCx(5, width);
-    float shadesX2 = shadesX1 + shadesW;
-    float shadesY2 = vY2;
-    float shadesY1 = vY2 - shadesH;
-    PrimitiveRenderer::drawRect(shadesX1, shadesY1, shadesX2, shadesY2, 0.3f, 0.3f, 0.3f);
-    PrimitiveRenderer::drawOutlineRect(shadesX1, shadesY1, shadesX2, shadesY2, 0, 0, 0, 1.0f);
-    glColor3f(1,1,1);
-    PrimitiveRenderer::drawText("Shades", shadesX1 + 0.01f, (shadesY1 + shadesY2)*0.5f - 0.01f, GLUT_BITMAP_HELVETICA_12);
-}
-
 // Text input handling functions
 void handleTextInput(GLFWwindow* window, int key, int scancode, int action, int mods) {
     if (!appState.activeInputField.active) return;
@@ -836,22 +653,22 @@ void handleTextInput(GLFWwindow* window, int key, int scancode, int action, int 
                     if (appState.activeInputField.panelType == 0) { // Rotation
                         appState.rotate[appState.activeInputField.axis] = newValue;
                         std::cout << "Rotation " << (appState.activeInputField.axis == 0 ? "X" :
-                                appState.activeInputField.axis == 1 ? "Y" : "Z")
-                                << " set to: " << newValue << std::endl;
+                        appState.activeInputField.axis == 1 ? "Y" : "Z")
+                        << " set to: " << newValue << std::endl;
                     }
                     else if (appState.activeInputField.panelType == 1) { // Scaling
                         appState.scale[appState.activeInputField.axis] = newValue;
                         std::cout << "Scaling " << (appState.activeInputField.axis == 0 ? "X" :
-                                appState.activeInputField.axis == 1 ? "Y" : "Z")
-                                << " set to: " << newValue << std::endl;
+                        appState.activeInputField.axis == 1 ? "Y" : "Z")
+                        << " set to: " << newValue << std::endl;
                     }
                     else if (appState.activeInputField.panelType == 2) { // Translation
                         appState.translate[appState.activeInputField.axis] = newValue;
                         // Apply limits after setting translation
                         applyTranslationLimits(appState.translate);
                         std::cout << "Translation " << (appState.activeInputField.axis == 0 ? "X" :
-                                appState.activeInputField.axis == 1 ? "Y" : "Z")
-                                << " set to: " << newValue << std::endl;
+                        appState.activeInputField.axis == 1 ? "Y" : "Z")
+                        << " set to: " << newValue << std::endl;
                     }
                 }
                 catch (const std::exception& e) {
@@ -951,7 +768,8 @@ int main() {
         PrimitiveRenderer::drawRect(rightEdgeNDC, -1.0f, 1.0f, topEdgeNDC, 0.5f, 0.5f, 0.5f);
         PrimitiveRenderer::drawRect(-1.0f, topEdgeNDC, 1.0f, 1.0f, 0.45f, 0.45f, 0.45f);
 
-        drawTopBarUI(width, height);
+        // Use the new Panels::drawTopBarUI function
+        Panels::drawTopBarUI(width, height, appState);
 
         float leftPanelWidth = PrimitiveRenderer::pxToNDCx((int)(Constants::LEFT_BAR_WIDTH * 0.85f), width);
         float leftPanelHeight = PrimitiveRenderer::pxToNDCy(310, height);
@@ -960,11 +778,11 @@ int main() {
 
         float texturesPanelY = -1.0f + appState.leftPanelTexturesScroll + leftVerticalOffset;
         Panels::drawTexturesPanel(-1.0f + PrimitiveRenderer::pxToNDCx(5, width), texturesPanelY,
-                                  leftPanelWidth, leftPanelHeight, appState, width, height);
+                                 leftPanelWidth, leftPanelHeight, appState, width, height);
 
         float shapesPanelY = texturesPanelY + leftPanelHeight + leftPanelGap + appState.leftPanelShapesScroll;
         Panels::drawShapesPanel(-1.0f + PrimitiveRenderer::pxToNDCx(5, width), shapesPanelY,
-                                leftPanelWidth, leftPanelHeight, appState, width, height);
+                               leftPanelWidth, leftPanelHeight, appState, width, height);
 
         float panelWidth = PrimitiveRenderer::pxToNDCx((int)(Constants::RIGHT_BAR_WIDTH * 0.85f), width);
         float panelHeight = PrimitiveRenderer::pxToNDCy(180, height);
@@ -1102,8 +920,8 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 
         // Print current selection state
         std::cout << "Current selection - X:" << appState.axisSelected[0]
-                << " Y:" << appState.axisSelected[1]
-                << " Z:" << appState.axisSelected[2] << "\n";
+                  << " Y:" << appState.axisSelected[1]
+                  << " Z:" << appState.axisSelected[2] << "\n";
 
     } else if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE) {
         appState.draggingAxis = false;

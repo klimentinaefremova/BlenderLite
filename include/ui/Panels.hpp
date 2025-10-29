@@ -13,6 +13,7 @@ public:
                                ApplicationState& state, int width, int height);
     static void drawTexturesPanel(float panelX1, float panelY1, float panelWidth, float panelHeight,
                                  ApplicationState& state, int width, int height);
+    static void drawTopBarUI(int width, int height, ApplicationState& appState);
 };
 
 #endif
