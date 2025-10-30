@@ -16,51 +16,45 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void handleTextInput(GLFWwindow* window, int key, int scancode, int action, int mods);
 void handleCharacterInput(GLFWwindow* window, unsigned int codepoint);
 
-// Enhanced 3D shape drawing functions with proper shading using current color
+// Enhanced 3D shape drawing functions with texture mapping
 void drawCube(ApplicationState& appState) {
     glBegin(GL_QUADS);
 
-    // Front face (lightest)
-    glColor3f(appState.currentColor[0] * 1.0f, appState.currentColor[1] * 1.0f, appState.currentColor[2] * 1.0f);
-    glVertex3f(-0.5f, -0.5f, 0.5f);
-    glVertex3f(0.5f, -0.5f, 0.5f);
-    glVertex3f(0.5f, 0.5f, 0.5f);
-    glVertex3f(-0.5f, 0.5f, 0.5f);
+    // Front face
+    glTexCoord2f(0.0f, 0.0f); glVertex3f(-0.5f, -0.5f, 0.5f);
+    glTexCoord2f(1.0f, 0.0f); glVertex3f(0.5f, -0.5f, 0.5f);
+    glTexCoord2f(1.0f, 1.0f); glVertex3f(0.5f, 0.5f, 0.5f);
+    glTexCoord2f(0.0f, 1.0f); glVertex3f(-0.5f, 0.5f, 0.5f);
 
-    // Back face (darkest)
-    glColor3f(appState.currentColor[0] * 0.5f, appState.currentColor[1] * 0.5f, appState.currentColor[2] * 0.5f);
-    glVertex3f(-0.5f, -0.5f, -0.5f);
-    glVertex3f(-0.5f, 0.5f, -0.5f);
-    glVertex3f(0.5f, 0.5f, -0.5f);
-    glVertex3f(0.5f, -0.5f, -0.5f);
+    // Back face
+    glTexCoord2f(1.0f, 0.0f); glVertex3f(-0.5f, -0.5f, -0.5f);
+    glTexCoord2f(1.0f, 1.0f); glVertex3f(-0.5f, 0.5f, -0.5f);
+    glTexCoord2f(0.0f, 1.0f); glVertex3f(0.5f, 0.5f, -0.5f);
+    glTexCoord2f(0.0f, 0.0f); glVertex3f(0.5f, -0.5f, -0.5f);
 
-    // Top face (light)
-    glColor3f(appState.currentColor[0] * 0.9f, appState.currentColor[1] * 0.9f, appState.currentColor[2] * 0.9f);
-    glVertex3f(-0.5f, 0.5f, -0.5f);
-    glVertex3f(-0.5f, 0.5f, 0.5f);
-    glVertex3f(0.5f, 0.5f, 0.5f);
-    glVertex3f(0.5f, 0.5f, -0.5f);
+    // Top face
+    glTexCoord2f(0.0f, 1.0f); glVertex3f(-0.5f, 0.5f, -0.5f);
+    glTexCoord2f(0.0f, 0.0f); glVertex3f(-0.5f, 0.5f, 0.5f);
+    glTexCoord2f(1.0f, 0.0f); glVertex3f(0.5f, 0.5f, 0.5f);
+    glTexCoord2f(1.0f, 1.0f); glVertex3f(0.5f, 0.5f, -0.5f);
 
-    // Bottom face (dark)
-    glColor3f(appState.currentColor[0] * 0.6f, appState.currentColor[1] * 0.6f, appState.currentColor[2] * 0.6f);
-    glVertex3f(-0.5f, -0.5f, -0.5f);
-    glVertex3f(0.5f, -0.5f, -0.5f);
-    glVertex3f(0.5f, -0.5f, 0.5f);
-    glVertex3f(-0.5f, -0.5f, 0.5f);
+    // Bottom face
+    glTexCoord2f(1.0f, 1.0f); glVertex3f(-0.5f, -0.5f, -0.5f);
+    glTexCoord2f(0.0f, 1.0f); glVertex3f(0.5f, -0.5f, -0.5f);
+    glTexCoord2f(0.0f, 0.0f); glVertex3f(0.5f, -0.5f, 0.5f);
+    glTexCoord2f(1.0f, 0.0f); glVertex3f(-0.5f, -0.5f, 0.5f);
 
-    // Right face (medium-light)
-    glColor3f(appState.currentColor[0] * 0.8f, appState.currentColor[1] * 0.8f, appState.currentColor[2] * 0.8f);
-    glVertex3f(0.5f, -0.5f, -0.5f);
-    glVertex3f(0.5f, 0.5f, -0.5f);
-    glVertex3f(0.5f, 0.5f, 0.5f);
-    glVertex3f(0.5f, -0.5f, 0.5f);
+    // Right face
+    glTexCoord2f(1.0f, 0.0f); glVertex3f(0.5f, -0.5f, -0.5f);
+    glTexCoord2f(1.0f, 1.0f); glVertex3f(0.5f, 0.5f, -0.5f);
+    glTexCoord2f(0.0f, 1.0f); glVertex3f(0.5f, 0.5f, 0.5f);
+    glTexCoord2f(0.0f, 0.0f); glVertex3f(0.5f, -0.5f, 0.5f);
 
-    // Left face (medium-dark)
-    glColor3f(appState.currentColor[0] * 0.7f, appState.currentColor[1] * 0.7f, appState.currentColor[2] * 0.7f);
-    glVertex3f(-0.5f, -0.5f, -0.5f);
-    glVertex3f(-0.5f, -0.5f, 0.5f);
-    glVertex3f(-0.5f, 0.5f, 0.5f);
-    glVertex3f(-0.5f, 0.5f, -0.5f);
+    // Left face
+    glTexCoord2f(0.0f, 0.0f); glVertex3f(-0.5f, -0.5f, -0.5f);
+    glTexCoord2f(1.0f, 0.0f); glVertex3f(-0.5f, -0.5f, 0.5f);
+    glTexCoord2f(1.0f, 1.0f); glVertex3f(-0.5f, 0.5f, 0.5f);
+    glTexCoord2f(0.0f, 1.0f); glVertex3f(-0.5f, 0.5f, -0.5f);
 
     glEnd();
 }
@@ -75,86 +69,97 @@ void drawSphere(float radius, int slices, int stacks, ApplicationState& appState
             float y = radius * cos(phi);
             float z = radius * sin(phi) * sin(theta);
 
-            // Vary color based on vertical position for realistic shading
-            float shade = 0.5f + y * 0.3f;
-            glColor3f(appState.currentColor[0] * shade, appState.currentColor[1] * shade, appState.currentColor[2] * shade);
+            // Texture coordinates based on spherical mapping
+            float s = (float)j / slices;
+            float t = (float)i / stacks;
+            glTexCoord2f(s, t);
             glVertex3f(x, y, z);
 
-            x = radius * sin(phi + Constants::PI / stacks) * cos(theta);
-            y = radius * cos(phi + Constants::PI / stacks);
-            z = radius * sin(phi + Constants::PI / stacks) * sin(theta);
+            float x2 = radius * sin(phi + Constants::PI / stacks) * cos(theta);
+            float y2 = radius * cos(phi + Constants::PI / stacks);
+            float z2 = radius * sin(phi + Constants::PI / stacks) * sin(theta);
 
-            shade = 0.5f + y * 0.3f;
-            glColor3f(appState.currentColor[0] * shade, appState.currentColor[1] * shade, appState.currentColor[2] * shade);
-            glVertex3f(x, y, z);
+            float t2 = (float)(i + 1) / stacks;
+            glTexCoord2f(s, t2);
+            glVertex3f(x2, y2, z2);
         }
         glEnd();
     }
 }
 
 void drawCone(float base, float height, int slices, ApplicationState& appState) {
-    // Base (dark)
+    // Base
     glBegin(GL_TRIANGLE_FAN);
-    glColor3f(appState.currentColor[0] * 0.5f, appState.currentColor[1] * 0.5f, appState.currentColor[2] * 0.5f);
+    glTexCoord2f(0.5f, 0.5f);
     glVertex3f(0.0f, -height/2, 0.0f);
     for (int i = 0; i <= slices; ++i) {
         float theta = 2.0f * Constants::PI * i / slices;
         float x = base * cos(theta);
         float z = base * sin(theta);
+        float s = 0.5f + 0.5f * cos(theta);
+        float t = 0.5f + 0.5f * sin(theta);
+        glTexCoord2f(s, t);
         glVertex3f(x, -height/2, z);
     }
     glEnd();
 
-    // Side with gradient shading
+    // Side
     glBegin(GL_TRIANGLE_FAN);
-    glColor3f(appState.currentColor[0] * 1.0f, appState.currentColor[1] * 1.0f, appState.currentColor[2] * 1.0f);
+    glTexCoord2f(0.5f, 1.0f);
     glVertex3f(0.0f, height/2, 0.0f);
     for (int i = 0; i <= slices; ++i) {
         float theta = 2.0f * Constants::PI * i / slices;
         float x = base * cos(theta);
         float z = base * sin(theta);
-
-        // Vary color based on angle for 3D effect
-        float shade = 0.6f - fabs(sin(theta)) * 0.2f;
-        glColor3f(appState.currentColor[0] * shade, appState.currentColor[1] * shade, appState.currentColor[2] * shade);
+        float s = (float)i / slices;
+        glTexCoord2f(s, 0.0f);
         glVertex3f(x, -height/2, z);
     }
     glEnd();
 }
 
 void drawCylinder(float radius, float height, int slices, ApplicationState& appState) {
-    // Top (light)
+    // Top
     glBegin(GL_TRIANGLE_FAN);
-    glColor3f(appState.currentColor[0] * 1.0f, appState.currentColor[1] * 1.0f, appState.currentColor[2] * 1.0f);
+    glTexCoord2f(0.5f, 0.5f);
     glVertex3f(0.0f, height/2, 0.0f);
     for (int i = 0; i <= slices; ++i) {
         float theta = 2.0f * Constants::PI * i / slices;
         float x = radius * cos(theta);
         float z = radius * sin(theta);
+        float s = 0.5f + 0.5f * cos(theta);
+        float t = 0.5f + 0.5f * sin(theta);
+        glTexCoord2f(s, t);
         glVertex3f(x, height/2, z);
     }
     glEnd();
 
-    // Bottom (dark)
+    // Bottom
     glBegin(GL_TRIANGLE_FAN);
-    glColor3f(appState.currentColor[0] * 0.5f, appState.currentColor[1] * 0.5f, appState.currentColor[2] * 0.5f);
+    glTexCoord2f(0.5f, 0.5f);
     glVertex3f(0.0f, -height/2, 0.0f);
     for (int i = 0; i <= slices; ++i) {
         float theta = 2.0f * Constants::PI * i / slices;
         float x = radius * cos(theta);
         float z = radius * sin(theta);
+        float s = 0.5f + 0.5f * cos(theta);
+        float t = 0.5f + 0.5f * sin(theta);
+        glTexCoord2f(s, t);
         glVertex3f(x, -height/2, z);
     }
     glEnd();
 
-    // Side with consistent medium color
+    // Side
     glBegin(GL_QUAD_STRIP);
-    glColor3f(appState.currentColor[0] * 0.75f, appState.currentColor[1] * 0.75f, appState.currentColor[2] * 0.75f);
     for (int i = 0; i <= slices; ++i) {
         float theta = 2.0f * Constants::PI * i / slices;
         float x = radius * cos(theta);
         float z = radius * sin(theta);
+        float s = (float)i / slices;
+
+        glTexCoord2f(s, 1.0f);
         glVertex3f(x, height/2, z);
+        glTexCoord2f(s, 0.0f);
         glVertex3f(x, -height/2, z);
     }
     glEnd();
@@ -172,9 +177,10 @@ void drawTorus(float majorRadius, float minorRadius, int majorSlices, int minorS
                 float y = minorRadius * sin(theta);
                 float z = (majorRadius + minorRadius * cos(theta)) * sin(phi);
 
-                // Vary color based on minor circle position
-                float shade = 0.5f + cos(theta) * 0.3f;
-                glColor3f(appState.currentColor[0] * shade, appState.currentColor[1] * shade, appState.currentColor[2] * shade);
+                // Texture coordinates
+                float s = (float)(i + k) / majorSlices;
+                float t = (float)j / minorSlices;
+                glTexCoord2f(s, t);
                 glVertex3f(x, y, z);
             }
         }
@@ -183,45 +189,40 @@ void drawTorus(float majorRadius, float minorRadius, int majorSlices, int minorS
 }
 
 void drawPyramid(float base, float height, ApplicationState& appState) {
-    // Base (dark)
+    // Base
     glBegin(GL_QUADS);
-    glColor3f(appState.currentColor[0] * 0.5f, appState.currentColor[1] * 0.5f, appState.currentColor[2] * 0.5f);
-    glVertex3f(-base/2, -height/2, -base/2);
-    glVertex3f(base/2, -height/2, -base/2);
-    glVertex3f(base/2, -height/2, base/2);
-    glVertex3f(-base/2, -height/2, base/2);
+    glTexCoord2f(0.0f, 0.0f); glVertex3f(-base/2, -height/2, -base/2);
+    glTexCoord2f(1.0f, 0.0f); glVertex3f(base/2, -height/2, -base/2);
+    glTexCoord2f(1.0f, 1.0f); glVertex3f(base/2, -height/2, base/2);
+    glTexCoord2f(0.0f, 1.0f); glVertex3f(-base/2, -height/2, base/2);
     glEnd();
 
-    // Front face (medium-light)
+    // Front face
     glBegin(GL_TRIANGLES);
-    glColor3f(appState.currentColor[0] * 0.9f, appState.currentColor[1] * 0.9f, appState.currentColor[2] * 0.9f);
-    glVertex3f(-base/2, -height/2, base/2);
-    glVertex3f(base/2, -height/2, base/2);
-    glVertex3f(0.0f, height/2, 0.0f);
+    glTexCoord2f(0.5f, 1.0f); glVertex3f(0.0f, height/2, 0.0f);
+    glTexCoord2f(0.0f, 0.0f); glVertex3f(-base/2, -height/2, base/2);
+    glTexCoord2f(1.0f, 0.0f); glVertex3f(base/2, -height/2, base/2);
     glEnd();
 
-    // Right face (light)
+    // Right face
     glBegin(GL_TRIANGLES);
-    glColor3f(appState.currentColor[0] * 1.0f, appState.currentColor[1] * 1.0f, appState.currentColor[2] * 1.0f);
-    glVertex3f(base/2, -height/2, base/2);
-    glVertex3f(base/2, -height/2, -base/2);
-    glVertex3f(0.0f, height/2, 0.0f);
+    glTexCoord2f(0.5f, 1.0f); glVertex3f(0.0f, height/2, 0.0f);
+    glTexCoord2f(0.0f, 0.0f); glVertex3f(base/2, -height/2, base/2);
+    glTexCoord2f(1.0f, 0.0f); glVertex3f(base/2, -height/2, -base/2);
     glEnd();
 
-    // Back face (medium-dark)
+    // Back face
     glBegin(GL_TRIANGLES);
-    glColor3f(appState.currentColor[0] * 0.7f, appState.currentColor[1] * 0.7f, appState.currentColor[2] * 0.7f);
-    glVertex3f(base/2, -height/2, -base/2);
-    glVertex3f(-base/2, -height/2, -base/2);
-    glVertex3f(0.0f, height/2, 0.0f);
+    glTexCoord2f(0.5f, 1.0f); glVertex3f(0.0f, height/2, 0.0f);
+    glTexCoord2f(0.0f, 0.0f); glVertex3f(base/2, -height/2, -base/2);
+    glTexCoord2f(1.0f, 0.0f); glVertex3f(-base/2, -height/2, -base/2);
     glEnd();
 
-    // Left face (medium)
+    // Left face
     glBegin(GL_TRIANGLES);
-    glColor3f(appState.currentColor[0] * 0.8f, appState.currentColor[1] * 0.8f, appState.currentColor[2] * 0.8f);
-    glVertex3f(-base/2, -height/2, -base/2);
-    glVertex3f(-base/2, -height/2, base/2);
-    glVertex3f(0.0f, height/2, 0.0f);
+    glTexCoord2f(0.5f, 1.0f); glVertex3f(0.0f, height/2, 0.0f);
+    glTexCoord2f(0.0f, 0.0f); glVertex3f(-base/2, -height/2, -base/2);
+    glTexCoord2f(1.0f, 0.0f); glVertex3f(-base/2, -height/2, base/2);
     glEnd();
 }
 
@@ -233,7 +234,7 @@ void drawCurrentShape(ApplicationState& appState) {
     // Enable depth testing for 3D
     glEnable(GL_DEPTH_TEST);
 
-    // Set up projection matrix (replacement for gluPerspective)
+    // Set up projection matrix
     glMatrixMode(GL_PROJECTION);
     glPushMatrix();
     glLoadIdentity();
@@ -261,7 +262,7 @@ void drawCurrentShape(ApplicationState& appState) {
     glPushMatrix();
     glLoadIdentity();
 
-    // Manual camera setup (replacement for gluLookAt)
+    // Manual camera setup
     float eyeX = 0.0f, eyeY = 0.0f, eyeZ = 3.0f;
     float centerX = 0.0f, centerY = 0.0f, centerZ = 0.0f;
     float upX = 0.0f, upY = 1.0f, upZ = 0.0f;
@@ -317,6 +318,37 @@ void drawCurrentShape(ApplicationState& appState) {
     glRotatef(appState.rotate[1], 0.0f, 1.0f, 0.0f);
     glRotatef(appState.rotate[2], 0.0f, 0.0f, 1.0f);
 
+    // NEW: Check if shape uses texture or color
+    bool usesTexture = PrimitiveRenderer::shapeHasTexture(appState.currentShape, appState);
+
+    if (usesTexture) {
+        int textureID = PrimitiveRenderer::getShapeTexture(appState.currentShape, appState);
+
+        if (textureID != -1 && textureID < PrimitiveRenderer::textureIDs.size() && PrimitiveRenderer::textureIDs[textureID] != 0) {
+            // Enable texturing with proper parameters
+            glEnable(GL_TEXTURE_2D);
+            glBindTexture(GL_TEXTURE_2D, PrimitiveRenderer::textureIDs[textureID]);
+
+            // Set texture parameters (important!)
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+            glEnable(GL_BLEND);
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+            glColor4f(1.0f, 1.0f, 1.0f, 1.0f); // Use white to preserve texture colors
+        } else {
+            // Fallback to color if texture is invalid
+            glDisable(GL_TEXTURE_2D);
+            glColor3f(appState.currentColor[0], appState.currentColor[1], appState.currentColor[2]);
+        }
+    } else {
+        // Use regular coloring
+        glDisable(GL_TEXTURE_2D);
+        glColor3f(appState.currentColor[0], appState.currentColor[1], appState.currentColor[2]);
+    }
+
     // Draw the selected shape
     switch (appState.currentShape) {
         case ShapeType::CUBE:
@@ -347,8 +379,9 @@ void drawCurrentShape(ApplicationState& appState) {
     glPopMatrix();
     glMatrixMode(GL_MODELVIEW);
 
-    // Disable depth testing for 2D UI
+    // Disable depth testing and texturing for 2D UI
     glDisable(GL_DEPTH_TEST);
+    glDisable(GL_TEXTURE_2D);
 }
 
 void draw3DAxes(float canvasX1, float canvasY1, float canvasX2, float canvasY2, int width, int height) {
@@ -653,22 +686,22 @@ void handleTextInput(GLFWwindow* window, int key, int scancode, int action, int 
                     if (appState.activeInputField.panelType == 0) { // Rotation
                         appState.rotate[appState.activeInputField.axis] = newValue;
                         std::cout << "Rotation " << (appState.activeInputField.axis == 0 ? "X" :
-                        appState.activeInputField.axis == 1 ? "Y" : "Z")
-                        << " set to: " << newValue << std::endl;
+                            appState.activeInputField.axis == 1 ? "Y" : "Z")
+                                  << " set to: " << newValue << std::endl;
                     }
                     else if (appState.activeInputField.panelType == 1) { // Scaling
                         appState.scale[appState.activeInputField.axis] = newValue;
                         std::cout << "Scaling " << (appState.activeInputField.axis == 0 ? "X" :
-                        appState.activeInputField.axis == 1 ? "Y" : "Z")
-                        << " set to: " << newValue << std::endl;
+                            appState.activeInputField.axis == 1 ? "Y" : "Z")
+                                  << " set to: " << newValue << std::endl;
                     }
                     else if (appState.activeInputField.panelType == 2) { // Translation
                         appState.translate[appState.activeInputField.axis] = newValue;
                         // Apply limits after setting translation
                         applyTranslationLimits(appState.translate);
                         std::cout << "Translation " << (appState.activeInputField.axis == 0 ? "X" :
-                        appState.activeInputField.axis == 1 ? "Y" : "Z")
-                        << " set to: " << newValue << std::endl;
+                            appState.activeInputField.axis == 1 ? "Y" : "Z")
+                                  << " set to: " << newValue << std::endl;
                     }
                 }
                 catch (const std::exception& e) {
@@ -740,6 +773,9 @@ int main() {
         std::cout << "Failed to initialize GLAD\n";
         return -1;
     }
+
+    // Initialize textures - THIS IS THE KEY FIX
+    PrimitiveRenderer::initTextures();
 
     int argc = 0;
     char** argv = nullptr;
@@ -840,6 +876,10 @@ int main() {
     }
 
     glfwTerminate();
+
+    // Cleanup textures
+    PrimitiveRenderer::cleanupTextures();
+
     return 0;
 }
 

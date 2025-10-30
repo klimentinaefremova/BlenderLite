@@ -25,12 +25,16 @@ file(GLOB_RECURSE SOURCES
 # Create executable
 add_executable(${PROJECT_NAME} ${SOURCES})
 
+# Find OpenGL and GLU
+find_package(OpenGL REQUIRED)
+
 # Link libraries
 target_link_libraries(${PROJECT_NAME}
         glfw
         ${GLFW_LIBRARIES}
         "${CMAKE_SOURCE_DIR}/vendor/freeglut/lib/x64/freeglut.lib"
-        opengl32
+        OpenGL::GL
+        glu32 # Add GLU library
 )
 
 # Copy DLL
@@ -38,4 +42,11 @@ add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
         "${CMAKE_SOURCE_DIR}/vendor/freeglut/bin/x64/freeglut.dll"
         "$<TARGET_FILE_DIR:${PROJECT_NAME}>"
+)
+
+# Copy textures directory to build folder
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${CMAKE_SOURCE_DIR}/textures"
+        "$<TARGET_FILE_DIR:${PROJECT_NAME}>/textures"
 )

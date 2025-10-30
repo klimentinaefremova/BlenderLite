@@ -3,6 +3,8 @@
 
 #include <GL/glut.h>
 #include <string>
+#include <vector>
+#include "core/ApplicationState.hpp"
 
 class PrimitiveRenderer {
 public:
@@ -15,6 +17,22 @@ public:
     static void mouseToNDC(double mx, double my, int width, int height, float &ndcX, float &ndcY);
     static bool isInsideNDC(double mx, double my, int width, int height, float x1, float y1, float x2, float y2);
     static void setScissor(int x, int y, int width, int height, int screenHeight);
+
+    // New texture-related functions
+    static bool loadTexture(const std::string& filename, GLuint& textureID);
+    static void drawTexturedRect(float x1, float y1, float x2, float y2, GLuint textureID);
+    static void initTextures();
+    static void cleanupTextures();
+
+    // NEW: Texture application functions
+    static void applyTextureToShape(ShapeType shapeType, int textureID, ApplicationState& appState);
+    static void applyColorToShape(ShapeType shapeType, ApplicationState& appState);
+    static int getShapeTexture(ShapeType shapeType, ApplicationState& appState);
+    static bool shapeHasTexture(ShapeType shapeType, ApplicationState& appState);
+    static void drawTexturedShape(ShapeType shapeType, ApplicationState& appState);
+
+    // Texture storage
+    static std::vector<GLuint> textureIDs;
 };
 
 #endif

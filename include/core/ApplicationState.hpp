@@ -50,6 +50,13 @@ struct ApplicationState {
 
     // New field for current shape color
     float currentColor[3] = {0.8f, 0.8f, 0.8f}; // Default light gray
+
+    // New field for texture selection
+    int selectedTexture = -1; // -1 means no texture selected
+
+    // NEW: Store texture for each shape and track if using texture or color
+    int shapeTextures[6] = {-1, -1, -1, -1, -1, -1}; // Texture IDs for each shape type
+    bool shapeUsesTexture[6] = {false, false, false, false, false, false}; // Track if shape uses texture or color
 };
 
 #endif

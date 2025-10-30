@@ -43,7 +43,14 @@ void handleColorButtonClick(int colorIndex, ApplicationState& state) {
             state.currentColor[2] = Constants::COLOR_MAGENTA[2];
             break;
     }
-    std::cout << "Color changed to button " << colorIndex << std::endl;
+
+    // NEW: Apply color to current shape (remove texture)
+    if (state.currentShape != ShapeType::NONE) {
+        PrimitiveRenderer::applyColorToShape(state.currentShape, state);
+        std::cout << "Color changed to button " << colorIndex << " and applied to current shape" << std::endl;
+    } else {
+        std::cout << "Color changed to button " << colorIndex << " (no shape selected)" << std::endl;
+    }
 }
 
 void Panels::drawTopBarUI(int width, int height, ApplicationState& appState) {
@@ -98,6 +105,7 @@ void Panels::drawTopBarUI(int width, int height, ApplicationState& appState) {
     float undoX2 = groupX1 + halfW - marginX*0.5f;
     float redoX1 = undoX2 + marginX*0.5f;
     float redoX2 = groupX2;
+
     bool hoverUndo = PrimitiveRenderer::isInsideNDC(appState.mouseX, appState.mouseY, width, height, undoX1, underY1, undoX2, underY2);
     bool hoverRedo = PrimitiveRenderer::isInsideNDC(appState.mouseX, appState.mouseY, width, height, redoX1, underY1, redoX2, underY2);
 
@@ -400,12 +408,12 @@ void Panels::drawTransformPanel(float panelX1, float panelY1, float panelWidth, 
     float resetBtnWidth = PrimitiveRenderer::pxToNDCx(60, width);
     float resetBtnHeight = PrimitiveRenderer::pxToNDCy(25, height);
     bool hoverReset = PrimitiveRenderer::isInsideNDC(state.mouseX, state.mouseY, width, height,
-                              panelX1 + PrimitiveRenderer::pxToNDCx(15, width), resetBtnY - resetBtnHeight,
-                              panelX1 + PrimitiveRenderer::pxToNDCx(15, width) + resetBtnWidth, resetBtnY);
+                                                   panelX1 + PrimitiveRenderer::pxToNDCx(15, width), resetBtnY - resetBtnHeight,
+                                                   panelX1 + PrimitiveRenderer::pxToNDCx(15, width) + resetBtnWidth, resetBtnY);
 
     PrimitiveRenderer::drawRect(panelX1 + PrimitiveRenderer::pxToNDCx(15, width), resetBtnY - resetBtnHeight,
-                              panelX1 + PrimitiveRenderer::pxToNDCx(15, width) + resetBtnWidth, resetBtnY,
-                              0.32f + (hoverReset ? 0.08f : 0.0f), 0.32f + (hoverReset ? 0.08f : 0.0f), 0.32f + (hoverReset ? 0.08f : 0.0f));
+                               panelX1 + PrimitiveRenderer::pxToNDCx(15, width) + resetBtnWidth, resetBtnY,
+                               0.32f + (hoverReset ? 0.08f : 0.0f), 0.32f + (hoverReset ? 0.08f : 0.0f), 0.32f + (hoverReset ? 0.08f : 0.0f));
     PrimitiveRenderer::drawOutlineRect(panelX1 + PrimitiveRenderer::pxToNDCx(15, width), resetBtnY - resetBtnHeight,
                                      panelX1 + PrimitiveRenderer::pxToNDCx(15, width) + resetBtnWidth, resetBtnY, 0,0,0,1.0f);
 
@@ -437,8 +445,6 @@ void Panels::drawTransformPanel(float panelX1, float panelY1, float panelWidth, 
         }
     }
 }
-
-
 
 void Panels::drawShapesPanel(float panelX1, float panelY1, float panelWidth, float panelHeight,
                             ApplicationState& state, int width, int height) {
@@ -812,6 +818,7 @@ void Panels::drawShapesPanel(float panelX1, float panelY1, float panelWidth, flo
 
 void Panels::drawTexturesPanel(float panelX1, float panelY1, float panelWidth, float panelHeight,
                               ApplicationState& state, int width, int height) {
+    // Enable scissor test for this panel
     int panelXPx = (int)((panelX1 + 1.0f) * 0.5f * width);
     int panelYPx = (int)((1.0f - (panelY1 + panelHeight)) * 0.5f * height);
     int panelWidthPx = (int)(panelWidth * 0.5f * width);
@@ -826,78 +833,93 @@ void Panels::drawTexturesPanel(float panelX1, float panelY1, float panelWidth, f
     glColor3f(1.0f, 1.0f, 1.0f);
     PrimitiveRenderer::drawText("Textures", panelX1 + PrimitiveRenderer::pxToNDCx(10, width), panelY1 + panelHeight - PrimitiveRenderer::pxToNDCy(25, height), GLUT_BITMAP_HELVETICA_18);
 
+    // Use the same layout as shapes panel for consistency
     float buttonWidth = (panelWidth - PrimitiveRenderer::pxToNDCx(40, width)) / 2.0f;
     float buttonHeight = PrimitiveRenderer::pxToNDCy(75, height);
     float buttonGap = PrimitiveRenderer::pxToNDCx(8, width);
-
     float rowGap = PrimitiveRenderer::pxToNDCy(10, height);
+
     float contentHeight = (buttonHeight * 3) + (rowGap * 2);
     float maxScroll = std::max(0.0f, contentHeight - panelHeight);
-
     float scrollOffset = std::max(0.0f, std::min(maxScroll, -state.leftPanelTexturesScroll));
 
     float row1Y = panelY1 + panelHeight - PrimitiveRenderer::pxToNDCy(50, height) + scrollOffset;
 
-    // Texture 1 button
-    float tex1X1 = panelX1 + PrimitiveRenderer::pxToNDCx(10, width);
-    float tex1X2 = tex1X1 + buttonWidth;
-    bool hoverTex1 = PrimitiveRenderer::isInsideNDC(state.mouseX, state.mouseY, width, height, tex1X1, row1Y - buttonHeight, tex1X2, row1Y);
-    PrimitiveRenderer::drawRect(tex1X1, row1Y - buttonHeight, tex1X2, row1Y, 0.3f + (hoverTex1 ? 0.1f : 0.0f), 0.3f + (hoverTex1 ? 0.1f : 0.0f), 0.3f + (hoverTex1 ? 0.1f : 0.0f));
-    PrimitiveRenderer::drawOutlineRect(tex1X1, row1Y - buttonHeight, tex1X2, row1Y, 0.0f, 0.0f, 0.0f, 1.5f);
-    glColor3f(1.0f, 1.0f, 1.0f);
-    PrimitiveRenderer::drawText("[texture1.png]", tex1X1 + PrimitiveRenderer::pxToNDCx(8, width), row1Y - PrimitiveRenderer::pxToNDCy(45, height), GLUT_BITMAP_HELVETICA_12);
+    // Texture buttons - 2 columns, 3 rows
+    for (int i = 0; i < 6; i++) {
+        int row = i / 2;
+        int col = i % 2;
 
-    // Texture 2 button
-    float tex2X1 = tex1X2 + buttonGap;
-    float tex2X2 = tex2X1 + buttonWidth;
-    bool hoverTex2 = PrimitiveRenderer::isInsideNDC(state.mouseX, state.mouseY, width, height, tex2X1, row1Y - buttonHeight, tex2X2, row1Y);
-    PrimitiveRenderer::drawRect(tex2X1, row1Y - buttonHeight, tex2X2, row1Y, 0.3f + (hoverTex2 ? 0.1f : 0.0f), 0.3f + (hoverTex2 ? 0.1f : 0.0f), 0.3f + (hoverTex2 ? 0.1f : 0.0f));
-    PrimitiveRenderer::drawOutlineRect(tex2X1, row1Y - buttonHeight, tex2X2, row1Y, 0.0f, 0.0f, 0.0f, 1.5f);
-    glColor3f(1.0f, 1.0f, 1.0f);
-    PrimitiveRenderer::drawText("[texture2.png]", tex2X1 + PrimitiveRenderer::pxToNDCx(8, width), row1Y - PrimitiveRenderer::pxToNDCy(45, height), GLUT_BITMAP_HELVETICA_12);
+        float buttonX1 = panelX1 + PrimitiveRenderer::pxToNDCx(10, width) + col * (buttonWidth + buttonGap);
+        float buttonX2 = buttonX1 + buttonWidth;
+        float buttonY1 = row1Y - buttonHeight - row * (buttonHeight + rowGap);
+        float buttonY2 = buttonY1 + buttonHeight;
 
-    float row2Y = row1Y - buttonHeight - rowGap;
+        bool hover = PrimitiveRenderer::isInsideNDC(state.mouseX, state.mouseY, width, height, buttonX1, buttonY1, buttonX2, buttonY2);
 
-    // Texture 3 button
-    float tex3X1 = panelX1 + PrimitiveRenderer::pxToNDCx(10, width);
-    float tex3X2 = tex3X1 + buttonWidth;
-    bool hoverTex3 = PrimitiveRenderer::isInsideNDC(state.mouseX, state.mouseY, width, height, tex3X1, row2Y - buttonHeight, tex3X2, row2Y);
-    PrimitiveRenderer::drawRect(tex3X1, row2Y - buttonHeight, tex3X2, row2Y, 0.3f + (hoverTex3 ? 0.1f : 0.0f), 0.3f + (hoverTex3 ? 0.1f : 0.0f), 0.3f + (hoverTex3 ? 0.1f : 0.0f));
-    PrimitiveRenderer::drawOutlineRect(tex3X1, row2Y - buttonHeight, tex3X2, row2Y, 0.0f, 0.0f, 0.0f, 1.5f);
-    glColor3f(1.0f, 1.0f, 1.0f);
-    PrimitiveRenderer::drawText("[texture3.png]", tex3X1 + PrimitiveRenderer::pxToNDCx(8, width), row2Y - PrimitiveRenderer::pxToNDCy(45, height), GLUT_BITMAP_HELVETICA_12);
+        // Draw button background
+        PrimitiveRenderer::drawRect(buttonX1, buttonY1, buttonX2, buttonY2,
+                                  0.3f + (hover ? 0.1f : 0.0f),
+                                  0.3f + (hover ? 0.1f : 0.0f),
+                                  0.3f + (hover ? 0.1f : 0.0f));
+        PrimitiveRenderer::drawOutlineRect(buttonX1, buttonY1, buttonX2, buttonY2, 0.0f, 0.0f, 0.0f, 1.5f);
 
-    // Texture 4 button
-    float tex4X1 = tex3X2 + buttonGap;
-    float tex4X2 = tex4X1 + buttonWidth;
-    bool hoverTex4 = PrimitiveRenderer::isInsideNDC(state.mouseX, state.mouseY, width, height, tex4X1, row2Y - buttonHeight, tex4X2, row2Y);
-    PrimitiveRenderer::drawRect(tex4X1, row2Y - buttonHeight, tex4X2, row2Y, 0.3f + (hoverTex4 ? 0.1f : 0.0f), 0.3f + (hoverTex4 ? 0.1f : 0.0f), 0.3f + (hoverTex4 ? 0.1f : 0.0f));
-    PrimitiveRenderer::drawOutlineRect(tex4X1, row2Y - buttonHeight, tex4X2, row2Y, 0.0f, 0.0f, 0.0f, 1.5f);
-    glColor3f(1.0f, 1.0f, 1.0f);
-    PrimitiveRenderer::drawText("[texture4.png]", tex4X1 + PrimitiveRenderer::pxToNDCx(8, width), row2Y - PrimitiveRenderer::pxToNDCy(45, height), GLUT_BITMAP_HELVETICA_12);
+        // Draw texture covering most of the button - INCREASED MARGIN
+        if (i < PrimitiveRenderer::textureIDs.size()) {
+            float textureMargin = PrimitiveRenderer::pxToNDCx(15, width); // Increased margin
+            float textureX1 = buttonX1 + textureMargin;
+            float textureX2 = buttonX2 - textureMargin;
+            float textureY1 = buttonY1 + textureMargin;
+            float textureY2 = buttonY2 - textureMargin;
 
-    float row3Y = row2Y - buttonHeight - rowGap;
+            // Save current matrix state
+            glMatrixMode(GL_PROJECTION);
+            glPushMatrix();
+            glLoadIdentity();
+            glOrtho(-1.0f, 1.0f, -1.0f, 1.0f, -1.0f, 1.0f);
 
-    // Texture 5 button
-    float tex5X1 = panelX1 + PrimitiveRenderer::pxToNDCx(10, width);
-    float tex5X2 = tex5X1 + buttonWidth;
-    bool hoverTex5 = PrimitiveRenderer::isInsideNDC(state.mouseX, state.mouseY, width, height, tex5X1, row3Y - buttonHeight, tex5X2, row3Y);
-    PrimitiveRenderer::drawRect(tex5X1, row3Y - buttonHeight, tex5X2, row3Y, 0.3f + (hoverTex5 ? 0.1f : 0.0f), 0.3f + (hoverTex5 ? 0.1f : 0.0f), 0.3f + (hoverTex5 ? 0.1f : 0.0f));
-    PrimitiveRenderer::drawOutlineRect(tex5X1, row3Y - buttonHeight, tex5X2, row3Y, 0.0f, 0.0f, 0.0f, 1.5f);
-    glColor3f(1.0f, 1.0f, 1.0f);
-    PrimitiveRenderer::drawText("[texture5.png]", tex5X1 + PrimitiveRenderer::pxToNDCx(8, width), row3Y - PrimitiveRenderer::pxToNDCy(45, height), GLUT_BITMAP_HELVETICA_12);
+            glMatrixMode(GL_MODELVIEW);
+            glPushMatrix();
+            glLoadIdentity();
 
-    // Texture 6 button
-    float tex6X1 = tex5X2 + buttonGap;
-    float tex6X2 = tex6X1 + buttonWidth;
-    bool hoverTex6 = PrimitiveRenderer::isInsideNDC(state.mouseX, state.mouseY, width, height, tex6X1, row3Y - buttonHeight, tex6X2, row3Y);
-    PrimitiveRenderer::drawRect(tex6X1, row3Y - buttonHeight, tex6X2, row3Y, 0.3f + (hoverTex6 ? 0.1f : 0.0f), 0.3f + (hoverTex6 ? 0.1f : 0.0f), 0.3f + (hoverTex6 ? 0.1f : 0.0f));
-    PrimitiveRenderer::drawOutlineRect(tex6X1, row3Y - buttonHeight, tex6X2, row3Y, 0.0f, 0.0f, 0.0f, 1.5f);
-    glColor3f(1.0f, 1.0f, 1.0f);
-    PrimitiveRenderer::drawText("[texture6.png]", tex6X1 + PrimitiveRenderer::pxToNDCx(8, width), row3Y - PrimitiveRenderer::pxToNDCy(45, height), GLUT_BITMAP_HELVETICA_12);
+            // Draw the textured rectangle
+            PrimitiveRenderer::drawTexturedRect(textureX1, textureY1, textureX2, textureY2, PrimitiveRenderer::textureIDs[i]);
+
+            // Restore matrix state
+            glPopMatrix();
+            glMatrixMode(GL_PROJECTION);
+            glPopMatrix();
+            glMatrixMode(GL_MODELVIEW);
+        } else {
+            // Draw placeholder if no texture
+            PrimitiveRenderer::drawRect(buttonX1, buttonY1, buttonX2, buttonY2, 0.8f, 0.2f, 0.2f);
+        }
+
+        // Handle texture selection AND application to current shape
+        if (hover && state.mouseClicked) {
+            state.selectedTexture = i;
+            std::cout << "Selected texture " << i << std::endl;
+
+            // NEW: Apply texture to current shape if one is selected
+            if (state.currentShape != ShapeType::NONE) {
+                PrimitiveRenderer::applyTextureToShape(state.currentShape, i, state);
+                std::cout << "Applied texture " << i << " to current shape" << std::endl;
+            } else {
+                std::cout << "No shape selected to apply texture to" << std::endl;
+            }
+        }
+
+        // Draw selection indicator
+        if (state.selectedTexture == i) {
+            PrimitiveRenderer::drawOutlineRect(buttonX1 - 0.005f, buttonY1 - 0.005f,
+                                             buttonX2 + 0.005f, buttonY2 + 0.005f,
+                                             1.0f, 1.0f, 0.0f, 2.0f);
+        }
+    }
 
     glDisable(GL_SCISSOR_TEST);
 
+    // Scroll bar for textures panel
     if (maxScroll > 0) {
         float scrollBarWidth = PrimitiveRenderer::pxToNDCx(8, width);
         float scrollBarX = panelX1 + panelWidth - scrollBarWidth - PrimitiveRenderer::pxToNDCx(5, width);
