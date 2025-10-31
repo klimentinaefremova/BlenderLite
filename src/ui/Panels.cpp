@@ -1,6 +1,5 @@
 #include "../include/ui/Panels.hpp"
 #include "../include/rendering/PrimitiveRenderer.hpp"
-#include "../include/core/TranslationLimits.hpp"
 #include "../include/core/Constants.hpp"
 #include <iostream>
 #include <algorithm>
@@ -423,15 +422,11 @@ void Panels::drawTransformPanel(float panelX1, float panelY1, float panelWidth, 
     // Handle reset button click for all panels
     if (hoverReset && state.mouseClicked) {
         if (title == "Translate") {
-            // Reset translation to middle of allowed ranges at current Z position
-            float currentXMin, currentXMax, currentYMin, currentYMax;
-            getCurrentBorders(state.translate[2], currentXMin, currentXMax, currentYMin, currentYMax);
-
-            state.translate[0] = (currentXMin + currentXMax) / 2.0f;
-            state.translate[1] = (currentYMin + currentYMax) / 2.0f;
-            state.translate[2] = Z_MAX - 0.1f;
-
-            std::cout << "Translation reset to default values\n";
+            // Reset translation to origin - NO LIMITS
+            state.translate[0] = 0.0f;
+            state.translate[1] = 0.0f;
+            state.translate[2] = 0.0f;
+            std::cout << "Translation reset to origin\n";
         } else if (title == "Scaling") {
             state.scale[0] = 1.0f;
             state.scale[1] = 1.0f;

@@ -26,6 +26,9 @@ struct ActiveInputField {
 
 struct ApplicationState {
     double mouseX = 0.0, mouseY = 0.0;
+    double lastX = 0.0, lastY = 0.0;
+    bool isDragging = false;
+
     float translate[3] = {0.0f, 0.0f, 0.0f};
     float scale[3] = {1.0f, 1.0f, 1.0f};
     float rotate[3] = {0.0f, 0.0f, 0.0f};
@@ -48,15 +51,25 @@ struct ApplicationState {
     // Shape selection
     ShapeType currentShape = ShapeType::NONE;
 
-    // New field for current shape color
+    // FIXED: Add missing currentColor field
     float currentColor[3] = {0.8f, 0.8f, 0.8f}; // Default light gray
 
-    // New field for texture selection
+    // FIXED: Rename currentTexture to selectedTexture for consistency
     int selectedTexture = -1; // -1 means no texture selected
 
     // NEW: Store texture for each shape and track if using texture or color
     int shapeTextures[6] = {-1, -1, -1, -1, -1, -1}; // Texture IDs for each shape type
     bool shapeUsesTexture[6] = {false, false, false, false, false, false}; // Track if shape uses texture or color
+
+    // NEW: Default colors for each shape type
+    float shapeColors[6][3] = {
+        {0.8f, 0.8f, 0.8f}, // Cube - light gray
+        {0.8f, 0.8f, 0.8f}, // Sphere - light gray
+        {0.8f, 0.8f, 0.8f}, // Cone - light gray
+        {0.8f, 0.8f, 0.8f}, // Cylinder - light gray
+        {0.8f, 0.8f, 0.8f}, // Torus - light gray
+        {0.8f, 0.8f, 0.8f}  // Pyramid - light gray
+    };
 };
 
 #endif
